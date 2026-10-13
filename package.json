@@ -1,0 +1,39 @@
+{
+  "name": "switcheroo",
+  "productName": "Switcheroo",
+  "version": "2.0.0",
+  "description": "Tests two Wi-Fi networks in the background and switches to the faster one.",
+  "main": "main.js",
+  "author": "hzurmely",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "test": "node engine.test.js",
+    "dist": "electron-builder --win nsis --publish never"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.hzurmely.switcheroo",
+    "productName": "Switcheroo",
+    "files": [
+      "*.js",
+      "index.html",
+      "style.css",
+      "*.png",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "icon.png",
+      "artifactName": "Switcheroo-Setup-${version}.exe"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "runAfterFinish": true
+    }
+  }
+}

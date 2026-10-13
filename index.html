@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Switcheroo</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="titlebar"><span class="tb-logo"></span><span>Switcheroo</span></div>
+
+<div class="app">
+  <nav class="rail">
+    <div class="rail-logo" title="Switcheroo">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M2.5 9a14 14 0 0 1 19 0"/><path d="M5.8 12.6a9.3 9.3 0 0 1 12.4 0"/><path d="M9.1 16.1a4.6 4.6 0 0 1 5.8 0"/><circle cx="12" cy="19.6" r="1" fill="#fff"/></svg>
+    </div>
+    <div class="rail-sep"></div>
+    <button class="rail-net" id="railA" data-slot="a"><span id="railAText">A</span></button>
+    <button class="rail-net" id="railB" data-slot="b"><span id="railBText">B</span></button>
+  </nav>
+
+  <aside class="side">
+    <header class="side-head">Switcheroo</header>
+    <div class="side-body">
+      <div class="group">Networks</div>
+      <div class="net" id="netA"><i class="dot a"></i><div class="net-main"><b id="nameA">Not set</b><small id="subA">no data yet</small></div><span class="badge" id="badgeA" hidden>ACTIVE</span></div>
+      <div class="net" id="netB"><i class="dot b"></i><div class="net-main"><b id="nameB">Not set</b><small id="subB">no data yet</small></div><span class="badge" id="badgeB" hidden>ACTIVE</span></div>
+
+      <div class="group">Setup</div>
+      <label class="field">Network A<select id="selA"></select></label>
+      <label class="field">Network B<select id="selB"></select></label>
+      <button class="btn" id="refresh">Refresh list</button>
+      <button class="btn primary" id="toggle">Start switching</button>
+      <p class="hint" id="hint"></p>
+    </div>
+    <footer class="user">
+      <div class="avatar"><span class="presence" id="presence"></span></div>
+      <div class="user-text"><b id="stateTitle">Paused</b><small id="stateSub">Not switching</small></div>
+    </footer>
+  </aside>
+
+  <main class="main">
+    <header class="main-head">
+      <span class="hash">#</span><b>live</b>
+      <span class="divider"></span>
+      <span class="topic" id="topic">Pick two networks and press Start</span>
+      <label class="switch" title="Launch Switcheroo with Windows">
+        <span>Start with Windows</span>
+        <input type="checkbox" id="autostart"><i></i>
+      </label>
+    </header>
+
+    <section class="stats">
+      <div class="card"><small>Download</small><b id="stSpeed">--</b><em>Mbps</em></div>
+      <div class="card"><small>Latency</small><b id="stLat">--</b><em>ms</em></div>
+      <div class="card"><small>Packet loss</small><b id="stLoss">--</b><em>%</em></div>
+      <div class="card"><small>Signal</small><b id="stSig">--</b><em>%</em></div>
+    </section>
+
+    <section class="chart-card">
+      <div class="chart-head"><b>Quality score</b>
+        <span class="legend"><i class="dot a"></i><span id="legA">A</span><i class="dot b"></i><span id="legB">B</span></span>
+      </div>
+      <canvas id="chart"></canvas>
+    </section>
+
+    <section class="feed-wrap">
+      <div class="feed-head">Activity</div>
+      <div class="feed" id="feed"></div>
+    </section>
+  </main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
