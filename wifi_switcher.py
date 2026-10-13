@@ -297,7 +297,8 @@ class Engine(threading.Thread):
         self.history[alt].append(alt_m["score"])
         self.update(alt, alt_m, alt_signal, True)
 
-        reference = max(current["score"], self.baseline(active))
+        recent = list(self.history[active])[-2:]
+        reference = statistics.mean(recent) if recent else current["score"]
         if alt_m["score"] > reference * STAY_MARGIN or (current["score"] == 0 and alt_m["score"] > 0):
             self.log("Switched to %s (%s)" % (alt, describe(alt_m)))
             return alt
