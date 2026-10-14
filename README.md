@@ -12,6 +12,8 @@ Download `Switcheroo-Setup-<version>.exe` from the Releases page, run it, pick y
 
 Both networks must already be saved in Windows (connect to each one once).
 
+Or with Windows Package Manager: `winget install hzurmely.Switcheroo`
+
 ## Updates
 
 The installed app checks GitHub for a new release every few hours, downloads it quietly and installs it the next time you quit. The tray menu also has Check for updates and, once one is ready, Restart to update.
@@ -40,6 +42,14 @@ Every measurement is saved to `Documents/Switcheroo Data` (you can change the fo
 - If the internet dies completely, it jumps to the other network.
 
 Each trial hop causes a few seconds of interruption, since one adapter can only be on one network at a time. Speed checks use roughly 2 MB each from Cloudflare.
+
+## Privacy
+
+Switcheroo sends pings to Cloudflare (1.1.1.1) and Google DNS (8.8.8.8), downloads a 2 MB test file from Cloudflare to measure speed, and asks GitHub for new versions. Your measurements stay in the data folder on your PC. Nothing else leaves it. To uninstall, use Windows Settings, Apps, Installed apps. The installer changes nothing outside its own folder, a Start menu shortcut, and the optional Start with Windows entry.
+
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org). Once signing is active, releases are built from this repository by GitHub Actions and every signing request is approved by the maintainer, hzurmely, who is the only author, reviewer and approver.
 
 ## Run from source
 
