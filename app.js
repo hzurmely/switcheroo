@@ -266,7 +266,6 @@ async function renderAvg() {
 function renderSettings() {
   $("gameOn").checked = !!S.prefs.game;
   $("autoDetect").checked = S.prefs.autoDetect !== false;
-  $("autostart2").checked = $("autostart").checked;
   if (document.activeElement !== $("extraGames")) $("extraGames").value = (S.prefs.extraGames || []).join(", ");
   $("maxMb").value = String(S.prefs.maxMb);
   const st = S.storage;
@@ -341,7 +340,7 @@ async function init() {
   fillSelect($("selA"), (cur() || {}).a);
   fillSelect($("selB"), (cur() || {}).b);
   $("houseName").value = (cur() || {}).name || "";
-  $("autostart").checked = !!st.autostart;
+  $("autostart2").checked = !!st.autostart;
   $("feed").innerHTML = '<div class="empty">Nothing yet. Start switching and updates show up here.</div>';
   (st.logs || []).forEach(addMessage);
   render();
@@ -382,9 +381,6 @@ async function init() {
     fillSelect($("selA"), $("selA").value);
     fillSelect($("selB"), $("selB").value);
   };
-  $("autostart").onchange = async (e) => {
-    e.target.checked = await window.api.setAutostart(e.target.checked);
-  };
   document.querySelectorAll(".tab").forEach((b) => (b.onclick = () => setTab(b.dataset.tab)));
   $("openSettings").onclick = () => ($("modal").hidden ? openModal() : closeModal());
   $("modalX").onclick = closeModal;
@@ -400,7 +396,6 @@ async function init() {
   };
   $("autostart2").onchange = async (e) => {
     e.target.checked = await window.api.setAutostart(e.target.checked);
-    $("autostart").checked = e.target.checked;
   };
   $("updCheck").onclick = () => window.api.checkUpdate();
   $("updInstall").onclick = () => window.api.installUpdate();
@@ -460,7 +455,7 @@ async function init() {
       loadAvg();
     }
   });
-  window.api.on("autostart", (v) => (($("autostart").checked = v), ($("autostart2").checked = v)));
+  window.api.on("autostart", (v) => ($("autostart2").checked = v));
 }
 
 init();

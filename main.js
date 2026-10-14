@@ -188,11 +188,13 @@ function showWindow() {
 }
 
 function autostartOn() {
-  return app.getLoginItemSettings().openAtLogin;
+  // Windows only reports the entry when asked with the same arguments it was saved with.
+  return app.getLoginItemSettings({ args: ["--hidden"] }).openAtLogin || app.getLoginItemSettings().openAtLogin;
 }
 
 function setAutostart(on) {
   app.setLoginItemSettings({ openAtLogin: !!on, args: ["--hidden"] });
+  if (!on) app.setLoginItemSettings({ openAtLogin: false });
 }
 
 function updateTray() {
