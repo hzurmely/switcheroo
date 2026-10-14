@@ -21,7 +21,7 @@
     "productName": "Switcheroo",
     "files": [
       "*.js",
-      "analyze.py",
+      "python/*.py",
       "index.html",
       "style.css",
       "*.png",
@@ -60,7 +60,7 @@
       "artifactName": "Switcheroo-${version}-mac-${arch}.${ext}"
     },
     "asarUnpack": [
-      "analyze.py"
+      "python/**"
     ]
   },
   "dependencies": {

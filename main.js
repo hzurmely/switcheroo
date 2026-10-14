@@ -401,7 +401,7 @@ ipcMain.handle("analysis:run", async () => {
     fs.mkdirSync(dir, { recursive: true });
     const raw = path.join(dir, "raw.csv");
     store.exportCsv(raw, (id) => (houses().find((x) => x.id === id) || {}).name || id);
-    const script = path.join(__dirname, "analyze.py").replace("app.asar" + path.sep, "app.asar.unpacked" + path.sep);
+    const script = path.join(__dirname, "python", "analyze.py").replace("app.asar" + path.sep, "app.asar.unpacked" + path.sep);
     const chk = await runPy(["-c", "import pandas, numpy, matplotlib"], 30000);
     if (chk.missing) return { ok: false, error: "Python was not found. Install Python 3 from python.org (tick Add to PATH), then try again." };
     if (chk.err) return { ok: false, error: "Python needs three packages. Open Command Prompt and run: python -m pip install pandas numpy matplotlib" };
