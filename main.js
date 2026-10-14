@@ -458,6 +458,8 @@ ipcMain.handle("house:detect", async () => {
 
 app.whenReady().then(() => {
   app.setAppUserModelId("com.hzurmely.switcheroo");
+  // Rewrite the startup entry so older installs also start hidden in the tray.
+  if (autostartOn()) setAutostart(true);
   createWindow();
   tray = new Tray(nativeImage.createFromPath(path.join(ASSETS, "tray-off.png")));
   tray.on("click", showWindow);

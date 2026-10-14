@@ -2,7 +2,7 @@
 
 # Switcheroo
 
-A Windows 11 app for people with two Wi-Fi networks (for example a 5G and a 2.4G one). It keeps testing both in the background and switches to the faster one.
+A Windows 10 and 11 app for people with two Wi-Fi networks (for example a 5G and a 2.4G one). It keeps testing both in the background and switches to the faster one.
 
 The interface is a web UI inside Electron, in the style of Discord: a network rail, a live stats panel, a quality chart and an activity feed. It lives in the system tray and can start with Windows.
 
