@@ -247,7 +247,7 @@ async function renderAvg() {
   const raw = range === "all" ? S.avg : (await window.api.averages(range)) || {};
   fillAvg(raw, "avgHead", "avgBody", "avgNote", "Green marks the better network. Game rank favours low latency and no packet loss.");
   const clean = (await window.api.cleanAverages(range)) || {};
-  fillAvg(clean, "cleanAvgHead", "cleanAvgBody", "cleanAvgNote", "Cleaned and balanced: impossible values dropped, outliers capped, one median row per 5 minute window. Game mode picks the network using these numbers.");
+  fillAvg(clean, "cleanAvgHead", "cleanAvgBody", "cleanAvgNote", "Preprocessed data: duplicates and impossible rows removed, outliers capped, then the networks are balanced only if the gap in samples is big. Game mode picks the network using these numbers.");
 }
 
 function setSub(t) {
@@ -356,7 +356,9 @@ async function renderClean(r) {
     box.appendChild(img);
   }
   $("openClean").hidden = false;
-  $("cleanNote").textContent = `${r.rawRows} raw rows became ${r.cleanRows} clean rows. Files are in ${r.dir}: clean-samples.csv (balanced), clean-rows.csv (cleaned, not balanced) and the graphs.`;
+  const bal = r.balance || {};
+  const what = { nothing: "nothing was added or removed, the gap is small", smote: "SMOTE added rows to the smaller network", smoteenn: "SMOTEENN was used, the gap is large" }[bal.action] || "";
+  $("cleanNote").textContent = `${r.rawRows} raw rows, ${r.realRows} real rows left after cleaning, ${r.cleanRows} rows after the balancing step (${what}${bal.synthetic ? ", " + bal.synthetic + " new rows" : ""}). Files are in ${r.dir}: clean-samples.csv (final), clean-rows.csv (cleaned real rows) and the graphs.`;
 }
 async function runClean() {
   $("runClean").disabled = true;
@@ -644,7 +646,7 @@ init();
 // ---------------------------------------------------------------- Python tab: notebook and small terminal
 const PY_START = [
   '# raw and clean are pandas tables of your saved measurements. Press Refresh data to read the newest ones.\nraw.groupby("network")[["mbps", "latency_ms"]].median()',
-  '# clean has one median row per network per 5 minute window\nclean.pivot(index="time", columns="network", values="mbps").plot()\nplt.ylabel("Mbps")',
+  '# clean is the preprocessed data, balanced only when the gap between the networks is big (see clean_info)\nfor n, g in clean.groupby("network"):\n    plt.plot(g["time"], g["mbps"], label=n)\nplt.legend()\nplt.ylabel("Mbps")',
 ];
 let pyCells = [];
 let pyReady = false;

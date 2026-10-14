@@ -137,7 +137,7 @@
       </div>
       <div class="panel" id="cleanPanel">
         <div class="chart-head"><b>Raw data vs clean data</b></div>
-        <p class="note">Switcheroo measures the network you are on every 30 seconds and the other one every 4 minutes, so the network you stay on has far more samples. Python cleans the data (types, duplicates, missing values, impossible values, outliers), then balances both networks with one median row per 5 minute window.</p>
+        <p class="note">Switcheroo measures the network you are on every 30 seconds and the other one every 4 minutes, so the networks end up with different numbers of samples. Python preprocesses the data (types, formats, duplicates, missing values, inconsistencies, outliers, encoding, normalization). Then it looks at the gap: if it is small nothing is done, if it is moderate SMOTE adds rows to the smaller network, and if it is large SMOTEENN is used. Real rows are never thrown away just to even out the counts.</p>
         <div class="row2"><button class="btn primary" id="runClean">Clean data and make graphs</button><button class="btn" id="openClean" hidden>Open folder</button></div>
         <p class="note" id="cleanNote"></p>
         <table class="avg" id="cleanTable" hidden><thead id="cleanHead"></thead><tbody id="cleanBody"></tbody></table>

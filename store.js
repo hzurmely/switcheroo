@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 
 const DAY = 86400000;
+const { balance } = require("./balance");
 const FILE_RE = /^samples-(\d{4}-\d{2}-\d{2})\.jsonl$/;
 
 const SUMS = ["n", "mbps", "mN", "lat", "latN", "loss", "score", "sN", "jit", "jitN", "sig", "sigN", "rate", "rateN", "maxLat", "fails", "ch5", "ch24"];
@@ -223,11 +224,10 @@ class Store {
     return out;
   }
 
-  // Same numbers as averages(), but on cleaned data: impossible values dropped, extreme outliers capped,
-  // and one median row per 5 minute window so the network you stay on does not count more than the other.
-  // Only uses the saved sample files, never the old summary, so the data is always the detailed kind.
+  // Same numbers as averages(), but on preprocessed data, in the same order as python/switcheroo_clean.py:
+  // duplicates, missing values, impossible values, outlier caps, then balancing only when the gap between
+  // the networks is big (see balance.js). Only uses the saved sample files, never the old summary.
   cleanAverages(house, since = 0) {
-    const WIN = 5 * 60 * 1000;
     const med = (a) => {
       const v = a.filter(has).sort((x, y) => x - y);
       if (!v.length) return null;
@@ -239,7 +239,8 @@ class Store {
       const lo = Math.floor(i);
       return v[lo] + (v[Math.min(lo + 1, v.length - 1)] - v[lo]) * (i - lo);
     };
-    const groups = {};
+    const seen = new Set();
+    const byNet = {};
     const fails = {};
     for (const f of this.files()) {
       if (since && Date.parse(f.name.slice(8, 18)) + DAY < since) continue;
@@ -249,34 +250,40 @@ class Store {
           fails[r.n] = (fails[r.n] || 0) + 1;
           continue;
         }
-        const g = ((groups[r.n] ||= {})[Math.floor(r.t / WIN)] ||= []);
-        g.push(r);
+        const key = r.t + "|" + r.n;
+        if (seen.has(key)) continue; // duplicate
+        seen.add(key);
+        (byNet[r.n] ||= []).push({ n: r.n, t: r.t, m: has(r.m) ? r.m : null, l: has(r.l) ? r.l : null, x: has(r.x) ? r.x : null, j: has(r.j) ? r.j : null, p: r.p || 0, s: has(r.s) ? r.s : null, g: has(r.g) ? r.g : null, rx: has(r.rx) ? r.rx : null, c: has(r.c) ? r.c : null });
       }
     }
-    const out = {};
-    for (const n of new Set([...Object.keys(groups), ...Object.keys(fails)])) {
-      const rows = Object.values(groups[n] || {}).map((g) => {
-        const ok = (k, lo, hi) => g.map((r) => r[k]).filter((x) => has(x) && x > lo && x <= hi);
-        return {
-          m: med(ok("m", 0, 5000)),
-          l: med(ok("l", 0, 5000)),
-          x: med(ok("x", 0, 5000)),
-          j: med(g.map((r) => r.j)),
-          s: med(g.map((r) => r.s)),
-          g: med(g.map((r) => r.g)),
-          rx: med(g.map((r) => r.rx)),
-          c: med(g.map((r) => r.c)),
-          p: g.reduce((a, r) => a + (r.p || 0), 0) / g.length,
-        };
+    const clean = {};
+    for (const [n, rows0] of Object.entries(byNet)) {
+      // missing values: median of the network
+      const fill = {};
+      for (const k of ["g", "rx", "c"]) fill[k] = med(rows0.map((r) => r[k]));
+      let rows = rows0.map((r) => {
+        const o = { ...r };
+        for (const k of ["g", "rx", "c"]) if (o[k] === null) o[k] = fill[k];
+        if (o.m !== null && o.m <= 0) o.m = null; // a download of 0 is a failed test
+        if (o.p >= 1) o.l = null; // total loss, so a latency makes no sense
+        return o;
       });
+      // impossible rows are removed
+      rows = rows.filter((r) => !((r.m !== null && r.m > 5000) || (r.l !== null && (r.l <= 0 || r.l > 5000))));
+      // high but possible values are capped, not removed
       for (const k of ["m", "l", "x", "j"]) {
         const v = rows.map((r) => r[k]).filter(has).sort((a, b) => a - b);
         if (v.length < 4) continue;
         const cap = quant(v, 0.75) + 1.5 * (quant(v, 0.75) - quant(v, 0.25));
-        for (const r of rows) if (has(r[k]) && r[k] > cap) r[k] = cap;
+        for (const r of rows) if (r[k] !== null && r[k] > cap) r[k] = cap;
       }
+      clean[n] = rows;
+    }
+    const balanced = balance(clean).byNet;
+    const out = {};
+    for (const n of new Set([...Object.keys(balanced), ...Object.keys(fails)])) {
       const b = fresh();
-      for (const r of rows) accumulate(b, r);
+      for (const r of balanced[n] || []) accumulate(b, { m: r.m, l: r.l, x: r.x, j: r.j, p: r.p, s: r.s, g: r.g, rx: r.rx, c: r.c });
       b.fails = fails[n] || 0;
       if (!b.n && !b.fails) continue;
       out[n] = this.shape(b);
