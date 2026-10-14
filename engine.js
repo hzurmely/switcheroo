@@ -78,15 +78,29 @@ class Engine extends EventEmitter {
     });
   }
 
-  async connect(profile, timeout = 20000) {
+  // Joins a network and waits until it really carries traffic. Windows often ignores the first
+  // connect request (the 5G network may not be in its scan list yet), so the request is repeated
+  // while the adapter is not on the network, and the reason for a failure is kept for the log.
+  async connect(profile, timeout = 40000) {
+    this.why = "";
     await this.sys.connect(profile);
     const start = Date.now();
+    let lastAsk = start;
+    let sawIt = false;
     while (Date.now() - start < timeout) {
       if (this.stopped) return false;
       const c = await this.sys.current();
-      if (same(c.ssid, profile) && (await this.sys.internetOk())) return true;
+      if (same(c.ssid, profile)) {
+        sawIt = true;
+        if (await this.sys.internetOk()) return true;
+      } else if (Date.now() - lastAsk >= (this.o.connectRetry ?? 7000)) {
+        lastAsk = Date.now();
+        if (this.sys.rescan) await this.sys.rescan();
+        await this.sys.connect(profile);
+      }
       await this.wait(1000);
     }
+    this.why = sawIt ? "joined but no internet" : "Windows would not join it";
     return false;
   }
 
@@ -182,7 +196,7 @@ class Engine extends EventEmitter {
       const here = await this.sys.ping();
       if (!(await this.connect(alt))) {
         await this.connect(active);
-        this.log(`${alt} did not come up, staying on ${active}`);
+        this.log(`${alt} did not come up (${this.why}), staying on ${active}`);
         return active;
       }
       const there = await this.sys.ping();
@@ -204,7 +218,7 @@ class Engine extends EventEmitter {
         return alt;
       }
       await this.connect(active);
-      this.log(`${alt} did not come up, staying on ${active}`);
+      this.log(`${alt} did not come up (${this.why}), staying on ${active}`);
     } else {
       this.log(`Game mode: staying on ${active}, better averages`);
     }
@@ -215,7 +229,7 @@ class Engine extends EventEmitter {
     const alt = this.other(active);
     this.log(`Testing ${alt} (${reason})`);
     if (!(await this.connect(alt))) {
-      this.log(`${alt} did not come up. Going back to ${active}`);
+      this.log(`${alt} did not come up (${this.why}). Going back to ${active}`);
       await this.connect(active);
       return active;
     }

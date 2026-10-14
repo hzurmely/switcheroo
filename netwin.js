@@ -52,6 +52,11 @@ async function connect(profile) {
   await run("netsh", ["wlan", "connect", "name=" + profile]);
 }
 
+// Asks the adapter for a fresh scan so a network that was out of the list can be found.
+async function rescan() {
+  await show("networks mode=bssid");
+}
+
 function tcpPing(host, port, timeout = 2000) {
   return new Promise((resolve) => {
     const t0 = process.hrtime.bigint();
@@ -129,4 +134,4 @@ async function ping() {
   return { latency: times.length ? times[Math.floor(times.length / 2)] : null, loss: lost / samples, mbps: null, score: null };
 }
 
-module.exports = { profiles, current, connect, internetOk, measure, ping };
+module.exports = { profiles, current, connect, rescan, internetOk, measure, ping };
