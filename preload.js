@@ -13,9 +13,12 @@ contextBridge.exposeInMainWorld("api", {
   openData: () => ipcRenderer.invoke("data:open"),
   chooseData: () => ipcRenderer.invoke("data:choose"),
   stop: () => ipcRenderer.invoke("stop"),
+  updateState: () => ipcRenderer.invoke("update:state"),
+  checkUpdate: () => ipcRenderer.invoke("update:check"),
+  installUpdate: () => ipcRenderer.invoke("update:install"),
   setAutostart: (on) => ipcRenderer.invoke("autostart", on),
   on: (channel, cb) => {
-    const allowed = ["log", "status", "active", "running", "autostart", "game", "houses"];
+    const allowed = ["log", "status", "active", "running", "autostart", "game", "houses", "update"];
     if (allowed.includes(channel)) ipcRenderer.on(channel, (_e, payload) => cb(payload));
   },
 });

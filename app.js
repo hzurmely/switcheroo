@@ -275,6 +275,25 @@ function renderSettings() {
   }
 }
 
+function renderUpdate(u) {
+  if (!u) return;
+  const cur = "Version " + (u.current || "?");
+  const text = {
+    idle: cur,
+    dev: cur + ". " + u.message,
+    checking: cur + ". Checking for updates...",
+    latest: cur + ". " + u.message,
+    downloading: cur + `. Downloading ${u.version}, ${u.percent}%`,
+    ready: cur + `. Version ${u.version} is ready.`,
+    error: cur + ". " + u.message,
+  }[u.state];
+  $("updText").textContent = text || cur;
+  $("updBarWrap").hidden = u.state !== "downloading";
+  $("updBar").style.width = (u.percent || 0) + "%";
+  $("updInstall").hidden = u.state !== "ready";
+  $("updCheck").disabled = ["checking", "downloading", "ready", "dev"].includes(u.state);
+}
+
 function setTab(t) {
   document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("on", b.dataset.tab === t));
   $("openSettings").classList.toggle("on", t === "set");
@@ -351,6 +370,10 @@ async function init() {
   };
   document.querySelectorAll(".tab").forEach((b) => (b.onclick = () => setTab(b.dataset.tab)));
   $("openSettings").onclick = () => setTab("set");
+  $("updCheck").onclick = () => window.api.checkUpdate();
+  $("updInstall").onclick = () => window.api.installUpdate();
+  window.api.updateState().then(renderUpdate);
+  window.api.on("update", renderUpdate);
   $("range").onchange = renderAvg;
   $("gameOn").onchange = async (e) => ((S.prefs = await window.api.setPrefs({ game: e.target.checked })), renderSettings());
   $("extraGames").onchange = async (e) => {

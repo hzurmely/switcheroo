@@ -302,6 +302,12 @@ ipcMain.handle("house:delete", (_e, id) => {
 
 ipcMain.handle("start", () => startEngine());
 ipcMain.handle("stop", () => stopEngine());
+ipcMain.handle("update:state", () => updater.getState());
+ipcMain.handle("update:check", () => updater.check());
+ipcMain.handle("update:install", () => {
+  quitting = true;
+  updater.installNow();
+});
 ipcMain.handle("autostart", (_e, on) => {
   setAutostart(on);
   updateTray();
@@ -382,6 +388,7 @@ app.whenReady().then(() => {
       updateVersion = v;
       updateTray();
     },
+    onChange: (s) => send("update", s),
   });
 
   const s = loadSettings();
