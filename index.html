@@ -51,6 +51,7 @@
     <nav class="tabs">
       <button class="tab on" data-tab="live">Live</button>
       <button class="tab" data-tab="avg">Averages</button>
+      <button class="tab" data-tab="py">Python</button>
       <span class="game-pill" id="gamePill" hidden>GAME MODE</span>
     </nav>
 
@@ -83,6 +84,25 @@
         <div class="feed-head">Activity</div>
         <div class="feed" id="feed"></div>
       </section>
+    </div>
+
+
+    <div class="pane" id="pane-py" hidden>
+      <div class="pybar">
+        <span class="pystate" id="pyState">Checking Python...</span>
+        <button class="btn primary" id="pySetup" hidden>Set up Python</button>
+        <span class="pyspacer"></span>
+        <button class="btn" id="pyAdd">+ Cell</button>
+        <button class="btn" id="pyRunAll">Run all</button>
+        <button class="btn" id="pyRefresh" title="Reads the newest measurements again">Refresh data</button>
+        <button class="btn" id="pyRestart" title="Stops Python and forgets all variables">Restart</button>
+      </div>
+      <div class="pyprog" id="pyProg" hidden><div class="pybarfill" id="pyFill"></div><small id="pyProgText"></small></div>
+      <div class="pycells scroll" id="pyCells"></div>
+      <div class="pyterm">
+        <div class="pyterm-out" id="pyTermOut"></div>
+        <label class="pyterm-in"><span>&gt;</span><input id="pyTermIn" type="text" spellcheck="false" autocomplete="off" placeholder="pip install seaborn   |   python file.py   |   or any Python, like raw.shape"></label>
+      </div>
     </div>
 
     <div class="pane scroll" id="pane-avg" hidden>

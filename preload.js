@@ -4,6 +4,14 @@ contextBridge.exposeInMainWorld("api", {
   state: () => ipcRenderer.invoke("state"),
   profiles: () => ipcRenderer.invoke("profiles"),
   start: () => ipcRenderer.invoke("start"),
+  pyStatus: () => ipcRenderer.invoke("py:status"),
+  pySetup: () => ipcRenderer.invoke("py:setup"),
+  pyRun: (code) => ipcRenderer.invoke("py:run", code),
+  pyReload: () => ipcRenderer.invoke("py:reload"),
+  pyRestart: () => ipcRenderer.invoke("py:restart"),
+  pyTerm: (line) => ipcRenderer.invoke("py:term", line),
+  pyLoad: () => ipcRenderer.invoke("py:nbload"),
+  pySave: (cells) => ipcRenderer.invoke("py:nbsave", cells),
   averages: (range) => ipcRenderer.invoke("averages", range),
   cleanAverages: (range) => ipcRenderer.invoke("averages:clean", range),
   storage: () => ipcRenderer.invoke("storage"),
@@ -28,7 +36,7 @@ contextBridge.exposeInMainWorld("api", {
   installUpdate: () => ipcRenderer.invoke("update:install"),
   setAutostart: (on) => ipcRenderer.invoke("autostart", on),
   on: (channel, cb) => {
-    const allowed = ["log", "status", "active", "running", "autostart", "game", "houses", "update"];
+    const allowed = ["log", "status", "active", "running", "autostart", "game", "houses", "update", "pyprogress"];
     if (allowed.includes(channel)) ipcRenderer.on(channel, (_e, payload) => cb(payload));
   },
 });

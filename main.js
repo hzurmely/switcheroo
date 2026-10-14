@@ -381,6 +381,8 @@ ipcMain.handle("data:csv", () => {
 function runPy(args, timeout) {
   return new Promise((resolve) => {
     const tries = [["py", ["-3"]], ["python", []], ["python3", []]];
+    const pe = pyenvGet();
+    if (pe.isReady()) tries.unshift([pe.exe(), []]);
     const next = (i) => {
       if (i >= tries.length) return resolve({ missing: true });
       const [cmd, pre] = tries[i];
@@ -393,6 +395,49 @@ function runPy(args, timeout) {
   });
 }
 const analysisDir = () => path.join(store.dir, "analysis");
+
+// ---- Python tab: private python, notebook kernel, small terminal
+let pyenvMod = null;
+function pyenvGet() {
+  if (!pyenvMod) {
+    pyenvMod = require("./pyenv").create({
+      root: app.getPath("userData"),
+      kernelScript: path.join(__dirname, "python", "kernel.py"),
+      onProgress: (p) => send("pyprogress", p),
+    });
+  }
+  return pyenvMod;
+}
+// refreshes raw.csv with the newest measurements and returns the folder the kernel reads from
+function pyData() {
+  const dir = analysisDir();
+  fs.mkdirSync(dir, { recursive: true });
+  store.exportCsv(path.join(dir, "raw.csv"), (id) => (houses().find((x) => x.id === id) || {}).name || id);
+  return dir;
+}
+ipcMain.handle("py:status", () => pyenvGet().status());
+ipcMain.handle("py:setup", () => pyenvGet().setup());
+ipcMain.handle("py:run", (_e, code) => pyenvGet().runCell(String(code || ""), pyData));
+ipcMain.handle("py:reload", () => pyenvGet().reload(pyData));
+ipcMain.handle("py:restart", () => {
+  pyenvGet().stop();
+  return true;
+});
+ipcMain.handle("py:term", (_e, line) => pyenvGet().term(line, analysisDir(), pyData));
+const nbFile = () => path.join(app.getPath("userData"), "notebook.json");
+ipcMain.handle("py:nbload", () => {
+  try {
+    return JSON.parse(fs.readFileSync(nbFile(), "utf8"));
+  } catch {
+    return null;
+  }
+});
+ipcMain.handle("py:nbsave", (_e, cells) => {
+  try {
+    fs.writeFileSync(nbFile(), JSON.stringify(cells));
+  } catch {}
+  return true;
+});
 const GRAPHS = ["samples.png", "speed_time.png", "speed_box.png", "latency_hist.png", "speed_hour.png"];
 ipcMain.handle("analysis:run", async () => {
   const h = currentHouse();
@@ -566,6 +611,7 @@ app.whenReady().then(() => {
 });
 
 app.on("before-quit", () => {
+  if (pyenvMod) pyenvMod.stop();
   quitting = true;
   if (engine) engine.stop();
 });

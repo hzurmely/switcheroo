@@ -430,9 +430,10 @@ function renderUpdate(u) {
 
 function setTab(t) {
   document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("on", b.dataset.tab === t));
-  for (const id of ["live", "avg"]) $("pane-" + id).hidden = id !== t;
+  for (const id of ["live", "avg", "py"]) $("pane-" + id).hidden = id !== t;
   if (t === "live") drawChart();
   if (t === "avg") renderAvg();
+  if (t === "py") pyOpen();
 }
 
 function openModal(sec) {
@@ -515,6 +516,7 @@ async function init() {
   };
   document.querySelectorAll(".tab").forEach((b) => (b.onclick = () => setTab(b.dataset.tab)));
   document.querySelectorAll(".sub").forEach((b) => (b.onclick = () => setSub(b.dataset.sub)));
+  pyWire();
   $("openSettings").onclick = () => ($("modal").hidden ? openModal() : closeModal());
   $("modalX").onclick = closeModal;
   document.addEventListener("keydown", (e) => {
@@ -637,3 +639,227 @@ async function init() {
 }
 
 init();
+
+
+// ---------------------------------------------------------------- Python tab: notebook and small terminal
+const PY_START = [
+  '# raw and clean are pandas tables of your saved measurements. Press Refresh data to read the newest ones.\nraw.groupby("network")[["mbps", "latency_ms"]].median()',
+  '# clean has one median row per network per 5 minute window\nclean.pivot(index="time", columns="network", values="mbps").plot()\nplt.ylabel("Mbps")',
+];
+let pyCells = [];
+let pyReady = false;
+let pyLoaded = false;
+let pySaveTimer = null;
+
+function pySave() {
+  clearTimeout(pySaveTimer);
+  pySaveTimer = setTimeout(() => window.api.pySave(pyCells.map((c) => ({ code: c.code }))), 400);
+}
+
+function pyShow(box, r) {
+  box.innerHTML = "";
+  if (!r) return;
+  if (r.out) {
+    const pre = document.createElement("pre");
+    pre.textContent = r.out;
+    box.appendChild(pre);
+  }
+  if (r.err) {
+    const pre = document.createElement("pre");
+    pre.className = "err";
+    pre.textContent = r.err;
+    box.appendChild(pre);
+  }
+  for (const b of r.images || []) {
+    const img = document.createElement("img");
+    img.src = "data:image/png;base64," + b;
+    box.appendChild(img);
+  }
+}
+
+async function pyRunCell(c) {
+  if (!pyReady) {
+    pyShow(c.outBox, { err: "Python is not set up yet. Press Set up Python at the top." });
+    return;
+  }
+  c.runBtn.disabled = true;
+  c.runBtn.textContent = "Running...";
+  c.outBox.innerHTML = "";
+  try {
+    pyShow(c.outBox, await window.api.pyRun(c.code));
+  } catch (e) {
+    pyShow(c.outBox, { err: String(e.message || e) });
+  }
+  c.runBtn.disabled = false;
+  c.runBtn.textContent = "Run";
+}
+
+function pyMakeCell(code, after) {
+  const c = { code };
+  const el = document.createElement("div");
+  el.className = "pycell";
+  const ta = document.createElement("textarea");
+  ta.spellcheck = false;
+  ta.value = code;
+  ta.rows = Math.max(2, code.split("\n").length);
+  const fit = () => {
+    ta.style.height = "auto";
+    ta.style.height = Math.max(44, ta.scrollHeight) + "px";
+  };
+  ta.oninput = () => {
+    c.code = ta.value;
+    fit();
+    pySave();
+  };
+  ta.onkeydown = (e) => {
+    if (e.key === "Enter" && (e.shiftKey || e.ctrlKey)) {
+      e.preventDefault();
+      pyRunCell(c).then(() => {
+        const i = pyCells.indexOf(c);
+        if (e.shiftKey && i === pyCells.length - 1) pyMakeCell("");
+        const next = pyCells[i + 1];
+        if (next && e.shiftKey) next.ta.focus();
+      });
+    } else if (e.key === "Tab") {
+      e.preventDefault();
+      const s = ta.selectionStart;
+      ta.value = ta.value.slice(0, s) + "    " + ta.value.slice(ta.selectionEnd);
+      ta.selectionStart = ta.selectionEnd = s + 4;
+      ta.oninput();
+    }
+  };
+  const row = document.createElement("div");
+  row.className = "pycell-row";
+  const run = document.createElement("button");
+  run.className = "btn primary small";
+  run.textContent = "Run";
+  run.onclick = () => pyRunCell(c);
+  const del = document.createElement("button");
+  del.className = "btn small";
+  del.textContent = "Delete";
+  del.onclick = () => {
+    pyCells.splice(pyCells.indexOf(c), 1);
+    el.remove();
+    pySave();
+  };
+  const hint = document.createElement("small");
+  hint.textContent = "Shift+Enter runs and goes to the next cell";
+  row.append(run, del, hint);
+  const out = document.createElement("div");
+  out.className = "pyout";
+  el.append(ta, row, out);
+  Object.assign(c, { ta, outBox: out, runBtn: run, el });
+  const list = $("pyCells");
+  const idx = after ? pyCells.indexOf(after) + 1 : pyCells.length;
+  pyCells.splice(idx, 0, c);
+  list.insertBefore(el, list.children[idx] || null);
+  fit();
+  if (!after) ta.focus();
+  return c;
+}
+
+async function pyRefreshStatus() {
+  const s = await window.api.pyStatus();
+  pyReady = s.ready;
+  $("pyState").textContent = s.setting ? "Setting up Python..." : s.ready ? "Python is ready" : "Python is not set up. One download, about 200 MB, kept in Switcheroo's own folder.";
+  $("pySetup").hidden = s.ready || s.setting;
+  return s;
+}
+
+async function pyOpen() {
+  if (!pyLoaded) {
+    pyLoaded = true;
+    const saved = await window.api.pyLoad();
+    const list = saved && saved.length ? saved.map((c) => c.code) : PY_START;
+    for (const code of list) pyMakeCell(code, pyCells[pyCells.length - 1] || null);
+    $("pyCells").querySelectorAll("textarea").forEach((t) => (t.style.height = Math.max(44, t.scrollHeight) + "px"));
+  }
+  const s = await pyRefreshStatus();
+  // not set up here, but a system python with the packages may exist: the first run finds out
+  if (!s.ready && !s.setting) {
+    const probe = await window.api.pyRun("1");
+    if (!/not set up/i.test(probe.err || "")) {
+      pyReady = true;
+      $("pyState").textContent = "Python is ready (using the Python already on this computer)";
+      $("pySetup").hidden = true;
+    }
+  }
+}
+
+async function pySetup() {
+  $("pySetup").hidden = true;
+  $("pyState").textContent = "Setting up Python...";
+  $("pyProg").hidden = false;
+  const r = await window.api.pySetup();
+  $("pyProg").hidden = true;
+  if (!r.ok) {
+    $("pyState").textContent = "Setup failed: " + r.error;
+    $("pySetup").hidden = false;
+    $("pySetup").textContent = "Try again";
+    return;
+  }
+  await pyRefreshStatus();
+}
+
+const pyHistory = [];
+let pyHistPos = 0;
+function pyTermPrint(text, cls) {
+  const box = $("pyTermOut");
+  const pre = document.createElement("pre");
+  if (cls) pre.className = cls;
+  pre.textContent = text;
+  box.appendChild(pre);
+  while (box.children.length > 200) box.firstChild.remove();
+  box.scrollTop = box.scrollHeight;
+}
+async function pyTermRun(line) {
+  pyTermPrint("> " + line, "cmd");
+  const r = await window.api.pyTerm(line);
+  if (r.out) pyTermPrint(r.out.replace(/\s+$/, ""));
+  if (r.err) pyTermPrint(r.err.replace(/\s+$/, ""), "err");
+  for (const b of r.images || []) {
+    const img = document.createElement("img");
+    img.src = "data:image/png;base64," + b;
+    $("pyTermOut").appendChild(img);
+  }
+  $("pyTermOut").scrollTop = $("pyTermOut").scrollHeight;
+}
+
+function pyWire() {
+  window.api.on("pyprogress", (p) => {
+    $("pyProg").hidden = false;
+    $("pyProgText").textContent = p.text || "";
+    $("pyFill").style.width = p.pct === null || p.pct === undefined ? "100%" : p.pct + "%";
+    $("pyFill").classList.toggle("busy", p.pct === null || p.pct === undefined);
+  });
+  $("pySetup").onclick = pySetup;
+  $("pyAdd").onclick = () => pyMakeCell("", pyCells[pyCells.length - 1] || null);
+  $("pyRunAll").onclick = async () => {
+    for (const c of pyCells.slice()) await pyRunCell(c);
+  };
+  $("pyRefresh").onclick = async () => {
+    if (!pyReady) return;
+    const r = await window.api.pyReload();
+    pyTermPrint(r.out || r.err || "Reloaded.", r.err ? "err" : "");
+  };
+  $("pyRestart").onclick = async () => {
+    await window.api.pyRestart();
+    pyTermPrint("Python restarted. Variables are gone, raw and clean are loaded again on the next run.");
+  };
+  $("pyTermIn").onkeydown = async (e) => {
+    const inp = e.target;
+    if (e.key === "Enter" && inp.value.trim()) {
+      const line = inp.value;
+      pyHistory.push(line);
+      pyHistPos = pyHistory.length;
+      inp.value = "";
+      await pyTermRun(line);
+    } else if (e.key === "ArrowUp" && pyHistPos > 0) {
+      e.preventDefault();
+      inp.value = pyHistory[--pyHistPos];
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      inp.value = pyHistPos < pyHistory.length - 1 ? pyHistory[++pyHistPos] : ((pyHistPos = pyHistory.length), "");
+    }
+  };
+}

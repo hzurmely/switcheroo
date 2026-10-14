@@ -206,3 +206,28 @@ input:focus { box-shadow: 0 0 0 2px var(--blurple); }
 .sub{background:transparent;border:0;color:#b5bac1;font:inherit;font-weight:600;padding:6px 16px;border-radius:6px;cursor:pointer}
 .sub:hover{color:#fff}
 .sub.on{background:#4e5058;color:#fff}
+
+.pybar{display:flex;align-items:center;gap:8px;padding:8px 16px;flex:none;flex-wrap:wrap}
+.pystate{color:var(--muted);font-size:13px}
+.pyspacer{flex:1}
+.pyprog{margin:0 16px 6px;background:var(--bg0);border-radius:6px;position:relative;height:22px;overflow:hidden;flex:none}
+.pybarfill{height:100%;background:var(--blurple);width:0;transition:width .2s}
+.pybarfill.busy{opacity:.45;animation:pyp 1.2s ease-in-out infinite alternate}
+@keyframes pyp{from{opacity:.25}to{opacity:.6}}
+.pyprog small{position:absolute;inset:0;display:flex;align-items:center;padding:0 10px;font-size:12px;color:#fff;white-space:nowrap;overflow:hidden}
+.pycells{flex:1;min-height:0;overflow:auto;padding:0 16px 8px;display:flex;flex-direction:column;gap:10px}
+.pycell{background:var(--bg1);border-radius:8px;padding:8px;flex:none}
+.pycell textarea{width:100%;box-sizing:border-box;background:var(--bg0);color:var(--text);border:0;border-radius:6px;padding:8px 10px;font:13px/1.45 Consolas,"Courier New",monospace;resize:none;outline:none;overflow:hidden}
+.pycell-row{display:flex;align-items:center;gap:8px;margin-top:6px}
+.pycell-row small{color:var(--muted);margin-left:auto}
+.btn.small{padding:3px 12px;font-size:12px}
+.pyout pre{margin:8px 0 0;white-space:pre-wrap;word-break:break-word;font:12.5px/1.45 Consolas,"Courier New",monospace;color:var(--text)}
+.pyout pre.err,.pyterm pre.err{color:#f6797c}
+.pyout img,.pyterm img{max-width:100%;border-radius:6px;margin-top:8px;display:block}
+.pyterm{flex:none;border-top:1px solid var(--bg0);background:var(--bg0);display:flex;flex-direction:column}
+.pyterm-out{max-height:130px;min-height:40px;overflow:auto;padding:6px 16px}
+.pyterm-out pre{margin:0 0 4px;white-space:pre-wrap;word-break:break-word;font:12px/1.4 Consolas,"Courier New",monospace}
+.pyterm-out pre.cmd{color:var(--muted)}
+.pyterm-in{display:flex;align-items:center;gap:8px;padding:6px 16px 10px}
+.pyterm-in span{color:var(--green);font:13px Consolas,monospace}
+.pyterm-in input{flex:1;background:var(--bg1);border:0;border-radius:6px;color:var(--text);padding:6px 10px;font:13px Consolas,"Courier New",monospace;outline:none}
