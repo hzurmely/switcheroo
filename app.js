@@ -198,7 +198,14 @@ async function start() {
   const h = cur();
   if (!h || !h.a || !h.b) return ($("hint").textContent = "Choose both networks first.");
   if (h.a === h.b) return ($("hint").textContent = "Pick two different networks.");
-  await window.api.start();
+  try {
+    const r = await window.api.start();
+    if (r && r.ok === false && r.why) $("hint").textContent = r.why;
+  } catch (e) {
+    $("hint").textContent = "Could not start: " + (e.message || e);
+  }
+  S.running = (await window.api.state()).running;
+  render();
 }
 
 async function loadAvg() {

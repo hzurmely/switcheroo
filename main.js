@@ -86,9 +86,13 @@ function send(channel, payload) {
   if (win && !win.isDestroyed()) win.webContents.send(channel, payload);
 }
 
+let lastStartError = "";
 function startEngine() {
   const house = currentHouse();
-  if (engine || !house || !house.a || !house.b || house.a === house.b) return false;
+  if (!house || !house.a || !house.b) { lastStartError = "Choose both networks first."; return false; }
+  if (house.a === house.b) { lastStartError = "Pick two different networks."; return false; }
+  if (engine) { lastStartError = "Already switching."; return false; }
+  lastStartError = "";
   const a = house.a;
   const b = house.b;
   runHouse = house.id;
@@ -99,11 +103,13 @@ function startEngine() {
   engine = new Engine(sys, [a, b], { averages: () => (store ? store.averages(house.id) : {}) });
   const mine = engine;
   engine.on("log", (e) => {
+    if (engine !== mine) return;
     cache.logs.push(e);
     if (cache.logs.length > 200) cache.logs.shift();
     send("log", e);
   });
   engine.on("status", (s) => {
+    if (engine !== mine) return;
     cache.status[s.net] = s;
     cache.series.push({ net: s.net, score: s.m.score, ts: s.ts });
     if (cache.series.length > 120) cache.series.shift();
@@ -112,14 +118,17 @@ function startEngine() {
     updateTray();
   });
   engine.on("joinfail", (f) => {
+    if (engine !== mine) return;
     if (store) store.event({ ts: f.ts, house: house.id, net: f.net, type: "joinfail" });
   });
   engine.on("game", (g) => {
+    if (engine !== mine) return;
     cache.game = g;
     send("game", g);
     updateTray();
   });
   engine.on("active", (n) => {
+    if (engine !== mine) return;
     cache.active = n;
     send("active", n);
     updateTray();
@@ -131,7 +140,7 @@ function startEngine() {
   });
   saveSettings({ running: true });
   send("running", true);
-  engine.run();
+  engine.run().catch(() => {});
   updateTray();
   return true;
 }
@@ -303,7 +312,11 @@ ipcMain.handle("house:delete", (_e, id) => {
   return true;
 });
 
-ipcMain.handle("start", () => startEngine());
+ipcMain.handle("start", async () => {
+  const ok = startEngine();
+  if (!ok && lastStartError === "Already switching.") send("running", true);
+  return { ok, why: ok ? "" : lastStartError };
+});
 ipcMain.handle("stop", () => stopEngine());
 ipcMain.handle("update:state", () => updater.getState());
 ipcMain.handle("update:check", () => updater.check());
