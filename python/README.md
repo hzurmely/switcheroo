@@ -17,12 +17,26 @@ Switcheroo adds a measurement every 30 seconds, so nothing here is a fixed datas
 
 ## What it does
 
-1. Fixes types and formats.
-2. Removes duplicates.
-3. Fills missing values.
-4. Fixes inconsistencies.
-5. Drops impossible values and caps outliers (IQR).
-6. Encodes and normalizes columns.
-7. Balances the networks with one median row per 5 minute window, because the network you stay on is measured far more often than the other.
+The steps live in `switcheroo_clean.py` and follow the Data Mining preprocessing order. `analyze.py` runs them and draws the graphs, and the notebook kernel runs the same code, so the Python tab, the CSVs and the app agree.
 
-Outputs: `clean-samples.csv` (balanced), `clean-rows.csv`, `summary.json`, and 5 PNG graphs.
+1. Types and formats.
+2. Duplicates.
+3. Missing values: median of each network for numbers, mode for radio type only if one type clearly dominates, otherwise Desconhecido.
+4. Inconsistencies: a speed of 0 is a failed test, the band comes from the channel.
+5. Outliers: impossible rows are removed, high but possible values are capped at Q3 plus 1.5 times IQR.
+6. Encoding: mode 0 or 1, network id, One Hot radio.
+7. Normalization: normality test per column, Z score if normal, Min Max if not.
+8. Balancing, decided by the gap between the networks:
+
+```
+ratio = rows of the smaller network / rows of the bigger one
+if ratio >= 0.8:      nothing is done
+elif ratio >= 0.4:    SMOTE, the smaller network gets new rows between neighbouring real rows
+else:                 SMOTEENN, SMOTE and then ENN (at most 15 percent of a network removed)
+```
+
+SMOTE, ENN and SMOTEENN are all tried and their counts are written in the summary, but only the one the rule picks is applied. Real rows are never dropped just to even out the counts.
+
+Outputs: `clean-samples.csv` (final data, the `synthetic` column marks new rows), `clean-rows.csv` (cleaned real rows only), `summary.json`, and 5 PNG graphs.
+
+The same rules also exist in JavaScript (`balance.js` and `store.js`) so the Clean table in the app and game mode do not need Python.
