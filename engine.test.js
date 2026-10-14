@@ -80,8 +80,13 @@ assert.strictEqual(after.A.n, before.A.n, "sample counts survive pruning");
 assert(Math.abs(after.A.mbps - before.A.mbps) < 0.01 && Math.abs(after.B.latency - before.B.latency) < 0.01, "averages survive pruning");
 assert(st.averages("h1", Date.now() - 3600000).A.n >= 1, "range filter works");
 assert.deepStrictEqual(st.averages("other"), {}, "households are separate");
-assert.strictEqual(matchGame(["chrome.exe", "CS2.exe".toLowerCase()]), "cs2.exe");
-assert.strictEqual(matchGame(["chrome.exe"], ["chrome.exe"]), "chrome.exe");
+assert.strictEqual(matchGame(["chrome.exe", "CS2.exe".toLowerCase()]), "cs2");
+assert.strictEqual(matchGame(["chrome.exe"], ["chrome.exe"]), "chrome");
+assert.strictEqual(matchGame([{ name: "VALORANT-Win64-Shipping", path: "" }]), "valorant-win64-shipping");
+assert.strictEqual(matchGame([{ name: "FortniteClient-Win64-Shipping", path: "" }]), "fortniteclient-win64-shipping");
+assert.strictEqual(matchGame([{ name: "SomeIndie", path: "D:\\SteamLibrary\\steamapps\\common\\Some Indie\\SomeIndie.exe" }]), "someindie");
+assert.strictEqual(matchGame([{ name: "vc_redist.x64", path: "C:\\Steam\\steamapps\\common\\X\\vc_redist.x64.exe" }]), null);
+assert.strictEqual(matchGame([{ name: "chrome", path: "C:\\Program Files\\Google\\Chrome\\chrome.exe" }]), null);
 assert.strictEqual(matchGame(["notepad.exe"]), null);
 fs.rmSync(dir, { recursive: true, force: true });
 

@@ -432,7 +432,7 @@ app.whenReady().then(() => {
   store = new Store(dir, (s.maxMb || 50) * 1024 * 1024);
   store.prune();
   setInterval(() => store.prune(), 3600000);
-  setInterval(() => watchGames().catch(() => {}), 10000);
+  setInterval(() => watchGames().catch(() => {}), 15000);
   setInterval(() => watchLocation().catch(() => {}), 25000);
 
   watchLocation().catch(() => {}).finally(() => {
