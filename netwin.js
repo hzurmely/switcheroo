@@ -34,7 +34,7 @@ async function profiles() {
 // Reads the Wi-Fi adapter. Labels are localized by Windows, so values are recognised by shape:
 // the first percentage is the signal, the two "(Mbps)" lines are receive and transmit rates.
 async function current() {
-  const r = { ssid: null, signal: null, channel: null, radio: null, band: null, rx: null, tx: null };
+  const r = { iface: null, ssid: null, signal: null, channel: null, radio: null, band: null, rx: null, tx: null };
   const rates = [];
   for (const line of (await show("interfaces")).split(/\r?\n/)) {
     const i = line.indexOf(":");
@@ -42,6 +42,7 @@ async function current() {
     const key = line.slice(0, i).trim();
     const val = line.slice(i + 1).trim();
     if (key === "SSID") r.ssid = val;
+    else if (/^(name|nome|nom)$/i.test(key) && !r.iface) r.iface = val;
     else if (/mbps/i.test(key) && /^\d+(\.\d+)?$/.test(val)) rates.push(Number(val));
     else if (/^(channel|canal|kanal|canale)\b/i.test(key) && /^\d+$/.test(val)) r.channel = Number(val);
     else if (/radio|r\u00e1dio/i.test(key) && val) r.radio = val;
@@ -56,8 +57,15 @@ async function current() {
   return r;
 }
 
-async function connect(profile) {
-  await run("netsh", ["wlan", "connect", "name=" + profile]);
+// Asks Windows to join a profile and returns what netsh answered. attempt 0 is the plain request,
+// 1 adds the adapter and network name, 2 drops the current connection first.
+async function connect(profile, attempt = 0, iface = null) {
+  if (attempt >= 2) await run("netsh", ["wlan", "disconnect"].concat(iface ? ["interface=" + iface] : []));
+  const args = ["wlan", "connect", "name=" + profile];
+  if (attempt >= 1) args.push("ssid=" + profile);
+  if (attempt >= 1 && iface) args.push("interface=" + iface);
+  const out = (await run("netsh", args)).replace(/\s+/g, " ").trim();
+  return out.slice(0, 160);
 }
 
 // Asks the adapter for a fresh scan so a network that was out of the list can be found.

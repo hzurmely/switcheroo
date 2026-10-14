@@ -84,24 +84,28 @@ class Engine extends EventEmitter {
   // while the adapter is not on the network, and the reason for a failure is kept for the log.
   async connect(profile, timeout = 40000) {
     this.why = "";
-    await this.sys.connect(profile);
+    let reply = await this.sys.connect(profile, 0);
     const start = Date.now();
     let lastAsk = start;
+    let attempt = 0;
     let sawIt = false;
+    let iface = null;
     while (Date.now() - start < timeout) {
       if (this.stopped) return false;
       const c = await this.sys.current();
+      if (c.iface) iface = c.iface;
       if (same(c.ssid, profile)) {
         sawIt = true;
         if (await this.sys.internetOk()) return true;
       } else if (Date.now() - lastAsk >= (this.o.connectRetry ?? 7000)) {
         lastAsk = Date.now();
+        attempt = Math.min(attempt + 1, 2);
         if (this.sys.rescan) await this.sys.rescan();
-        await this.sys.connect(profile);
+        reply = (await this.sys.connect(profile, attempt, iface)) || reply;
       }
       await this.wait(1000);
     }
-    this.why = sawIt ? "joined but no internet" : "Windows would not join it";
+    this.why = sawIt ? "joined but no internet" : "Windows would not join it" + (reply ? `. Windows said: ${reply}` : "");
     this.emit("joinfail", { net: profile, why: this.why, ts: Date.now() });
     return false;
   }
