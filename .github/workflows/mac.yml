@@ -1,0 +1,22 @@
+name: Mac test build
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm test
+      - run: npm run dist:mac
+      - name: Publish test build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          gh release create "mac-test-$VERSION" dist/*.dmg --repo "$GITHUB_REPOSITORY" --prerelease --title "Mac test build $VERSION" --notes "Unofficial macOS test build. Unsigned: after copying to Applications run: xattr -cr /Applications/Switcheroo.app then open it."
