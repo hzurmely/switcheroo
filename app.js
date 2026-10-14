@@ -388,6 +388,37 @@ async function init() {
     if (e.key === "Escape" && !$("modal").hidden) closeModal();
   });
   document.querySelectorAll(".mnav").forEach((b) => (b.onclick = () => showSection(b.dataset.sec)));
+  $("scanGames").onclick = async () => {
+    $("scanNote").textContent = "Scanning...";
+    $("scanList").innerHTML = "";
+    const r = await window.api.scanGames();
+    if (r.error) return ($("scanNote").textContent = "Could not list running programs: " + r.error);
+    const lines = [`Saw ${r.count} running programs.`];
+    lines.push(r.found ? `Game found: ${r.found}.` : "No game found.");
+    if (!r.enabled) lines.push("Game mode is switched off above.");
+    else if (!r.running) lines.push("Switching is stopped, so game mode is idle. Press Start switching.");
+    $("scanNote").textContent = lines.join(" ");
+    if (!r.found && r.top.length) {
+      const label = document.createElement("p");
+      label.className = "note";
+      label.textContent = "Biggest programs right now. Click your game to add it:";
+      $("scanList").appendChild(label);
+      for (const p of r.top) {
+        const b = document.createElement("button");
+        b.className = "btn chip";
+        b.textContent = `${p.name} (${p.mb} MB)`;
+        b.onclick = async () => {
+          const list = (S.prefs.extraGames || []).filter((x) => x.toLowerCase() !== p.name.toLowerCase());
+          list.push(p.name);
+          S.prefs = await window.api.setPrefs({ extraGames: list });
+          renderSettings();
+          b.textContent = "Added " + p.name;
+          b.disabled = true;
+        };
+        $("scanList").appendChild(b);
+      }
+    }
+  };
   $("autoDetect").onchange = async (e) => ((S.prefs = await window.api.setPrefs({ autoDetect: e.target.checked })), renderSettings());
   $("detectNow").onclick = async () => {
     $("detectNote").textContent = "Looking...";

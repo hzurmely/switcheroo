@@ -142,7 +142,14 @@
           <label class="row"><span>Switch to the network with better averages when a game opens</span>
             <span class="switch"><input type="checkbox" id="gameOn"><i></i></span></label>
           <label class="field wide">Extra game programs (exe names, comma separated)<input id="extraGames" placeholder="mygame.exe, other.exe"></label>
-          <p class="note">Common games are detected automatically. Game mode only pings, so it adds no lag, and it never switches in the middle of a match.</p>
+          <p class="note">Common games are detected automatically. Game mode only pings, so it adds no lag, and it never switches in the middle of a match. Game mode only works while switching is on.</p>
+        </div>
+        <div class="panel">
+          <b>Check game detection</b>
+          <p class="note">Open your game, then press Scan. It shows what Switcheroo sees running.</p>
+          <div class="row2"><button class="btn" id="scanGames">Scan now</button></div>
+          <p class="note" id="scanNote"></p>
+          <div id="scanList" class="chips"></div>
         </div>
       </section>
 

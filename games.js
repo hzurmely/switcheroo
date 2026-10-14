@@ -35,16 +35,30 @@ const NOT_GAMES = /(redist|vcredist|dxsetup|crashhandler|crashreport|unitycrashh
 
 const norm = (s) => String(s || "").trim().toLowerCase().replace(/\.exe$/, "");
 
+function csvRow(line) {
+  const out = [];
+  const re = /"((?:[^"]|"")*)"|([^,]*)/g;
+  let m;
+  while ((m = re.exec(line)) !== null && out.length < 6) {
+    out.push(m[1] !== undefined ? m[1].replace(/""/g, '"') : m[2]);
+    if (re.lastIndex >= line.length) break;
+    re.lastIndex++; // skip the comma
+  }
+  return out;
+}
+
+// Resolves { procs, error }. error is set when PowerShell could not list the programs.
 function processList() {
-  const ps = "Get-Process | Select-Object ProcessName,Path | ConvertTo-Csv -NoTypeInformation";
+  const ps = "Get-Process | Select-Object ProcessName,Path,WorkingSet64 | ConvertTo-Csv -NoTypeInformation";
   return new Promise((resolve) => {
-    execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", ps], { windowsHide: true, timeout: 15000, maxBuffer: 8 << 20 }, (_e, out) => {
+    execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", ps], { windowsHide: true, timeout: 20000, maxBuffer: 16 << 20 }, (err, out, errOut) => {
       const procs = [];
       for (const line of (out || "").split(/\r?\n/).slice(1)) {
-        const m = /^"((?:[^"]|"")*)"(?:,"((?:[^"]|"")*)")?/.exec(line);
-        if (m) procs.push({ name: m[1].replace(/""/g, '"'), path: (m[2] || "").replace(/""/g, '"') });
+        if (!line.trim()) continue;
+        const [name, path, ws] = csvRow(line);
+        if (name) procs.push({ name, path: path || "", mb: Math.round((Number(ws) || 0) / 1048576) });
       }
-      resolve(procs);
+      resolve({ procs, error: procs.length ? null : (err && err.message) || String(errOut || "No programs were listed").slice(0, 200) });
     });
   });
 }
@@ -62,7 +76,19 @@ function matchGame(procs, extra = []) {
 }
 
 async function detect(extra) {
-  return matchGame(await processList(), extra);
+  const { procs } = await processList();
+  return matchGame(procs, extra);
 }
 
-module.exports = { detect, matchGame, KNOWN };
+// For the Settings screen: what was seen, what matched, and the biggest programs so the user can add one.
+async function scan(extra) {
+  const { procs, error } = await processList();
+  const top = [...procs]
+    .filter((p) => !/^(system|idle|registry|memcompression|dwm|explorer|svchost|searchhost|startmenuexperiencehost|msedgewebview2|chrome|msedge|firefox|code|claude|switcheroo|electron)$/i.test(p.name))
+    .sort((a, b) => b.mb - a.mb)
+    .slice(0, 8)
+    .map((p) => ({ name: p.name, mb: p.mb }));
+  return { count: procs.length, found: matchGame(procs, extra), top, error };
+}
+
+module.exports = { detect, scan, matchGame, KNOWN };

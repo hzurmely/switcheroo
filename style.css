@@ -175,3 +175,6 @@ input:focus { box-shadow: 0 0 0 2px var(--blurple); }
 .modal-x span { position: absolute; top: 40px; font-size: 11px; font-weight: 700; }
 .modal-x:hover { color: #fff; border-color: #fff; background: var(--bg3); }
 @media (max-width: 760px) { .modal-nav { flex-basis: 150px; padding-left: 8px; } .modal-nav-in { width: 140px; } .modal-body { padding: 56px 16px; } }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chips .note { width: 100%; }
+.btn.chip { width: auto; padding: 6px 10px; font-size: 13px; }

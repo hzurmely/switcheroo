@@ -352,6 +352,13 @@ async function watchGames() {
   if (engine) engine.setGame(found);
 }
 
+ipcMain.handle("games:scan", async () => {
+  const r = await games.scan(loadSettings().extraGames || []);
+  r.running = !!engine;
+  r.enabled = loadSettings().game !== false;
+  return r;
+});
+
 function goToHouse(id, text) {
   const was = !!engine;
   if (was) stopEngine();
