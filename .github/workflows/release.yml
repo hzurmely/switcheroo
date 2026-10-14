@@ -22,4 +22,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v$(node -p "require('./package.json').version")"
-          gh release create "$TAG" dist/Switcheroo-Setup-*.exe --repo "$GITHUB_REPOSITORY" --title "Switcheroo $TAG" --notes "Windows 11 app. Download the installer and run it. New: average speed and latency per network, game mode, saved data with automatic cleanup, households, new logo."
+          gh release create "$TAG" dist/Switcheroo-Setup-*.exe dist/latest.yml dist/*.blockmap --repo "$GITHUB_REPOSITORY" --title "Switcheroo $TAG" --notes "Windows 11 app. Download the installer and run it. New: automatic updates. The app now updates itself from here."
