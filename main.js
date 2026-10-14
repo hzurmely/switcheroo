@@ -256,7 +256,7 @@ function fullState() {
     series: cache.series,
     logs: cache.logs,
     game: cache.game,
-    prefs: { game: st.game !== false, extraGames: st.extraGames || [], maxMb: st.maxMb || 50, autoDetect: st.autoDetect !== false },
+    prefs: { game: st.game !== false, extraGames: st.extraGames || [], maxMb: st.maxMb || 50, autoDetect: st.autoDetect !== false, autoUpdate: st.autoUpdate !== false },
     storage: storageInfo(),
   };
 }
@@ -321,6 +321,7 @@ ipcMain.handle("prefs:set", (_e, p) => {
   const patch = {};
   if (typeof p.game === "boolean") patch.game = p.game;
   if (typeof p.autoDetect === "boolean") patch.autoDetect = p.autoDetect;
+  if (typeof p.autoUpdate === "boolean") patch.autoUpdate = p.autoUpdate;
   if (Array.isArray(p.extraGames)) patch.extraGames = p.extraGames.map(String).slice(0, 50);
   if (Number(p.maxMb) >= 5) {
     patch.maxMb = Math.min(5000, Math.floor(Number(p.maxMb)));
@@ -331,6 +332,22 @@ ipcMain.handle("prefs:set", (_e, p) => {
   return fullState().prefs;
 });
 ipcMain.handle("data:open", () => shell.openPath(store.dir));
+ipcMain.handle("data:reveal", (_e, file) => {
+  if (typeof file === "string" && path.dirname(file) === store.dir) shell.showItemInFolder(file);
+});
+ipcMain.handle("avg:csv", (_e, range, text) => {
+  const safe = ["day", "week", "all"].includes(range) ? range : "all";
+  const d = new Date();
+  const p2 = (n) => String(n).padStart(2, "0");
+  const stamp = `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}_${p2(d.getHours())}${p2(d.getMinutes())}`;
+  const file = path.join(store.dir, `averages-${safe}-${stamp}.csv`);
+  try {
+    fs.writeFileSync(file, "\ufeff" + String(text), "utf8");
+    return { ok: true, file };
+  } catch (e) {
+    return { ok: false, error: String(e.message || e) };
+  }
+});
 ipcMain.handle("data:choose", async () => {
   const r = await dialog.showOpenDialog(win, { properties: ["openDirectory", "createDirectory"], defaultPath: store.dir });
   if (r.canceled || !r.filePaths[0]) return storageInfo();
@@ -422,6 +439,7 @@ app.whenReady().then(() => {
   updateTray();
 
   updater.init({
+    auto: () => loadSettings().autoUpdate !== false,
     log: (text) => {
       const e = { ts: Date.now(), text };
       cache.logs.push(e);

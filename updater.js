@@ -11,7 +11,7 @@ function set(patch) {
   onState(state);
 }
 
-function init({ log, onReady, onChange }) {
+function init({ log, onReady, onChange, auto }) {
   onState = onChange || onState;
   state.current = app.getVersion();
   if (!app.isPackaged) {
@@ -40,7 +40,10 @@ function init({ log, onReady, onChange }) {
     onReady(i.version);
   });
   autoUpdater.on("error", () => set({ state: "error", message: "Could not reach GitHub. Try again later." }));
-  const check = () => autoUpdater.checkForUpdates().catch(() => {});
+  const check = () => {
+    if (auto && !auto()) return;
+    autoUpdater.checkForUpdates().catch(() => {});
+  };
   setTimeout(check, 15000);
   setInterval(check, 4 * 3600000);
 }

@@ -263,9 +263,35 @@ async function renderAvg() {
     : "Pick two networks to see their averages.";
 }
 
+let lastCsv = null;
+async function exportCsv() {
+  const range = $("range").value;
+  const data = range === "all" ? S.avg : (await window.api.averages(range)) || {};
+  const nets = [S.a, S.b].filter(Boolean);
+  if (!nets.length) return ($("csvNote").textContent = "Pick two networks first.");
+  const q = (s) => '"' + String(s).replace(/"/g, '""') + '"';
+  const raw = {
+    "Samples": (v) => v.n, "Average speed (Mbps)": (v) => v.mbps, "Best speed (Mbps)": (v) => v.topMbps,
+    "Worst speed (Mbps)": (v) => v.lowMbps, "Average latency (ms)": (v) => v.latency, "Slowest ping (ms)": (v) => v.peakLat,
+    "Jitter (ms)": (v) => v.jitter, "Packet loss (%)": (v) => v.loss * 100, "Signal (%)": (v) => v.signal,
+    "Link speed (Mbps)": (v) => v.linkRate, "Seen on 5 GHz (%)": (v) => v.band5 * 100, "Failed to join": (v) => v.fails,
+    "Game rank": (v) => gameRank(v),
+  };
+  const num = (x) => (x === null || x === undefined || Number.isNaN(x) ? "" : String(Math.round(x * 100) / 100));
+  const lines = [["Metric", ...nets].map(q).join(",")];
+  for (const [label, get] of Object.entries(raw)) {
+    lines.push([q(label), ...nets.map((n) => { try { return num(data[n] ? get(data[n]) : null); } catch { return ""; } })].join(","));
+  }
+  const r = await window.api.exportCsv(range, lines.join("\r\n") + "\r\n");
+  lastCsv = r.ok ? r.file : null;
+  $("csvNote").textContent = r.ok ? "Saved to " + r.file : "Could not save: " + r.error;
+  $("revealCsv").hidden = !r.ok;
+}
+
 function renderSettings() {
   $("gameOn").checked = !!S.prefs.game;
   $("autoDetect").checked = S.prefs.autoDetect !== false;
+  $("autoUpdate").checked = S.prefs.autoUpdate !== false;
   if (document.activeElement !== $("extraGames")) $("extraGames").value = (S.prefs.extraGames || []).join(", ");
   $("maxMb").value = String(S.prefs.maxMb);
   const st = S.storage;
@@ -419,6 +445,9 @@ async function init() {
       }
     }
   };
+  $("autoUpdate").onchange = async (e) => ((S.prefs = await window.api.setPrefs({ autoUpdate: e.target.checked })), renderSettings());
+  $("exportCsv").onclick = exportCsv;
+  $("revealCsv").onclick = () => lastCsv && window.api.revealFile(lastCsv);
   $("autoDetect").onchange = async (e) => ((S.prefs = await window.api.setPrefs({ autoDetect: e.target.checked })), renderSettings());
   $("detectNow").onclick = async () => {
     $("detectNote").textContent = "Looking...";
