@@ -103,6 +103,18 @@ function render() {
   $("topic").textContent = S.running
     ? `Watching ${S.a} and ${S.b}. Currently on ${S.active || "..."}.`
     : "Pick two networks and press Start";
+  const playing = !!(S.game && S.prefs.game);
+  $("gameCard").classList.toggle("playing", playing);
+  $("gameCard").classList.toggle("off", !S.prefs.game);
+  $("gcLive").hidden = !playing;
+  $("gcLabel").textContent = playing ? "Current game" : "Game mode";
+  $("gcTitle").textContent = playing ? String(S.game) : S.prefs.game ? "No game running" : "Game mode is off";
+  $("gcSub").textContent = playing
+    ? `Staying on ${S.active || "your network"} and only pinging, so there is no extra lag.`
+    : S.prefs.game
+    ? (S.running ? "Watching for games. Open one and it shows up here." : "Press Start switching and Switcheroo watches for games.")
+    : "Turn it on to move to the lower ping network when a game opens.";
+  $("gcToggle").checked = !!S.prefs.game;
   $("gamePill").hidden = !S.game;
   if (S.game) $("gamePill").textContent = "GAME MODE";
   $("houseTitle").textContent = (cur() && cur().name) || "Switcheroo";
@@ -476,6 +488,7 @@ async function init() {
   window.api.updateState().then(renderUpdate);
   window.api.on("update", renderUpdate);
   $("range").onchange = renderAvg;
+  $("gcToggle").onchange = async (e) => ((S.prefs = await window.api.setPrefs({ game: e.target.checked })), renderSettings(), render());
   $("gameOn").onchange = async (e) => ((S.prefs = await window.api.setPrefs({ game: e.target.checked })), renderSettings());
   $("extraGames").onchange = async (e) => {
     const list = e.target.value.split(",").map((x) => x.trim()).filter(Boolean);

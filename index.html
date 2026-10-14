@@ -36,7 +36,7 @@
       <p class="hint" id="hint"></p>
     </div>
     <footer class="user">
-      <div class="avatar"><span class="presence" id="presence"></span></div>
+      <span class="presence" id="presence"></span>
       <div class="user-text"><b id="stateTitle">Paused</b><small id="stateSub">Not switching</small></div>
     </footer>
   </aside>
@@ -55,6 +55,15 @@
     </nav>
 
     <div class="pane" id="pane-live">
+      <section class="gamecard" id="gameCard">
+        <div class="gc-icon" id="gcIcon"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M6 8h12a4 4 0 0 1 4 4v2.5a3.5 3.5 0 0 1-6.2 2.2L14.5 15h-5l-1.3 1.7A3.5 3.5 0 0 1 2 14.5V12a4 4 0 0 1 4-4zm2.5 2.5v1.2H7.3v1.6h1.2v1.2h1.6v-1.2h1.2v-1.6h-1.2v-1.2zM16 11.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm2 1.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" fill="currentColor"/></svg></div>
+        <div class="gc-text">
+          <small id="gcLabel">Game mode</small>
+          <b id="gcTitle">No game running</b>
+          <span id="gcSub">Open a game and it shows up here.</span>
+        </div>
+        <div class="gc-right"><span class="gc-live" id="gcLive" hidden><i></i>Playing</span><label class="switch" title="Game mode on or off"><input type="checkbox" id="gcToggle"><i></i></label></div>
+      </section>
       <section class="stats">
         <div class="card"><small>Download</small><b id="stSpeed">--</b><em>Mbps</em></div>
         <div class="card"><small>Latency</small><b id="stLat">--</b><em>ms</em></div>
