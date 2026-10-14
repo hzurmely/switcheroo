@@ -1,0 +1,254 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="switcheroo" class="roo-idle roo-flag" viewBox="0 0 430 400" width="430" height="400" role="img" aria-labelledby="roo-title">
+  <title id="roo-title">Roo, the Switcheroo kangaroo</title>
+  <!--
+    Switcheroo mascot. Every moving part is its own group with an id, and its
+    pivot is set below with transform-origin (viewBox units). Animate any part
+    with CSS transforms, GSAP or the Web Animations API.
+    The styles are scoped to #switcheroo, so the file can be pasted inline in a page.
+
+    #roo            whole character, origin at the feet (hops, squash and stretch)
+    #shadow         ground shadow, shrink it while #roo is in the air
+    #tail           origin at the tail base, positive rotation lifts the tip
+    #torso          body and belly, origin at the hips (breathing)
+    #pouch          the pouch
+    #belly-logo     Switcheroo logo on the belly
+      #wifi           the signal, scaleX(-1) swaps the pixel and smooth halves
+        #wifi-pixel     red pixel half
+        #wifi-smooth    blue half: #wifi-arc-1 (small) to #wifi-arc-3 (big), #wifi-dot
+      #logo-arrow     the little switch arrow
+    #flag           small hand flag (French flag, logo on the white stripe)
+      #flag-wave      origin at the paw grip, rotate it to flick the flag
+        #flag-cloth   10 slices (.roo-fs0 to .roo-fs9) that make the cloth flutter
+    #arm-flag       paw holding the flag. #flag and #arm-flag share one pivot:
+                    give both the same rotation and the paw stays on the stick.
+    #arm-thumb      other arm, resting on the tummy with a thumbs up (soft drop
+                    shadow so it reads against the body), origin at the shoulder
+      #paw-thumb      origin at the wrist, rock it for a thumbs up pump
+        #thumb
+    #leg-front      near thigh and foot
+    #foot-back      far foot
+    #head           origin at the neck
+      #ear-front, #ear-back   origin at each ear base
+      #lid-front, #lid-back   eyelids, scaleY(0) open, scaleY(1) closed
+      #pupils                 translate a few px to look around
+      #mouth
+  -->
+  <style>
+    #switcheroo * { transform-box: view-box; }
+    #switcheroo #roo { transform-origin: 250px 368px; }
+    #switcheroo #shadow { transform-origin: 250px 370px; }
+    #switcheroo #tail { transform-origin: 186px 300px; }
+    #switcheroo #torso { transform-origin: 228px 350px; }
+    #switcheroo #pouch { transform-origin: 228px 350px; }
+    #switcheroo #belly-logo { transform-origin: 228px 350px; }
+    #switcheroo #wifi { transform-origin: 247px 240px; }
+    #switcheroo #flag, #switcheroo #arm-flag { transform-origin: 274px 232px; }
+    #switcheroo #flag-wave { transform-origin: 330px 246px; }
+    #switcheroo #arm-thumb { transform-origin: 196px 194px; }
+    #switcheroo #paw-thumb { transform-origin: 210px 262px; }
+    #switcheroo #head { transform-origin: 236px 150px; }
+    #switcheroo #ear-front { transform-origin: 246px 80px; }
+    #switcheroo #ear-back { transform-origin: 224px 84px; }
+    #switcheroo #lid-front { transform-origin: 272px 84px; transform: scaleY(0); }
+    #switcheroo #lid-back { transform-origin: 248px 83.5px; transform: scaleY(0); }
+
+    /* idle loop: add class "roo-idle" to the svg */
+    @keyframes roo-breathe { 0%,100% { transform: scale(1,1); } 50% { transform: scale(1.012,1.022); } }
+    @keyframes roo-bob     { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2.2px); } }
+    @keyframes roo-blink   { 0%,90%,97%,100% { transform: scaleY(0); } 93.5% { transform: scaleY(1); } }
+    @keyframes roo-twitch  { 0%,64%,80%,100% { transform: rotate(0); } 68% { transform: rotate(-12deg); } 72% { transform: rotate(5deg); } 76% { transform: rotate(-4deg); } }
+    @keyframes roo-sway    { 0%,100% { transform: rotate(0); } 50% { transform: rotate(-3deg); } }
+    @keyframes roo-tail    { 0%,100% { transform: rotate(0); } 50% { transform: rotate(2.5deg); } }
+    @keyframes roo-look    { 0%,30%,100% { transform: translate(0,0); } 36%,55% { transform: translate(1.6px,-1.4px); } 61%,80% { transform: translate(-1.8px,0.6px); } }
+    @keyframes roo-arm-rise { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-0.3px,-2.6px); } }
+    @keyframes roo-hold    { 0%,100% { transform: rotate(0); } 50% { transform: rotate(-1.6deg); } }
+
+    #switcheroo.roo-idle #torso,
+    #switcheroo.roo-idle #pouch,
+    #switcheroo.roo-idle #belly-logo { animation: roo-breathe 3.2s ease-in-out infinite; }
+    #switcheroo.roo-idle #head      { animation: roo-bob 3.2s ease-in-out infinite; }
+    #switcheroo.roo-idle #flag,
+    #switcheroo.roo-idle #arm-flag  { animation: roo-hold 3.2s ease-in-out infinite; }
+    #switcheroo.roo-idle #arm-thumb { animation: roo-arm-rise 3.2s ease-in-out infinite; }
+    #switcheroo.roo-idle #lid-front,
+    #switcheroo.roo-idle #lid-back  { animation: roo-blink 4.6s linear infinite; }
+    #switcheroo.roo-idle #ear-front { animation: roo-twitch 5.5s ease-in-out infinite; }
+    #switcheroo.roo-idle #ear-back  { animation: roo-sway 3.8s ease-in-out infinite; }
+    #switcheroo.roo-idle #tail      { animation: roo-tail 3.2s ease-in-out infinite; }
+    #switcheroo.roo-idle #pupils    { animation: roo-look 7s ease-in-out infinite; }
+    /* flag flutter: class roo-flag */
+    @keyframes roo-fs0 { 0% { transform: translate(0px,0.1px) translate(335.1px,0px) skewY(1.51deg) translate(-335.1px,0px); } 8.33% { transform: translate(0px,0.18px) translate(335.1px,0px) skewY(2.82deg) translate(-335.1px,0px); } 16.67% { transform: translate(0px,0.21px) translate(335.1px,0px) skewY(3.36deg) translate(-335.1px,0px); } 25% { transform: translate(0px,0.19px) translate(335.1px,0px) skewY(3.01deg) translate(-335.1px,0px); } 33.33% { transform: translate(0px,0.12px) translate(335.1px,0px) skewY(1.85deg) translate(-335.1px,0px); } 41.67% { transform: translate(0px,0.01px) translate(335.1px,0px) skewY(0.2deg) translate(-335.1px,0px); } 50% { transform: translate(0px,-0.1px) translate(335.1px,0px) skewY(-1.51deg) translate(-335.1px,0px); } 58.33% { transform: translate(0px,-0.18px) translate(335.1px,0px) skewY(-2.82deg) translate(-335.1px,0px); } 66.67% { transform: translate(0px,-0.21px) translate(335.1px,0px) skewY(-3.36deg) translate(-335.1px,0px); } 75% { transform: translate(0px,-0.19px) translate(335.1px,0px) skewY(-3.01deg) translate(-335.1px,0px); } 83.33% { transform: translate(0px,-0.12px) translate(335.1px,0px) skewY(-1.85deg) translate(-335.1px,0px); } 91.67% { transform: translate(0px,-0.01px) translate(335.1px,0px) skewY(-0.2deg) translate(-335.1px,0px); } 100% { transform: translate(0px,0.1px) translate(335.1px,0px) skewY(1.51deg) translate(-335.1px,0px); } }
+    @keyframes roo-fs1 { 0% { transform: translate(0px,0.02px) translate(342.3px,0px) skewY(-2.72deg) translate(-342.3px,0px); } 8.33% { transform: translate(0px,0.3px) translate(342.3px,0px) skewY(-0.88deg) translate(-342.3px,0px); } 16.67% { transform: translate(0px,0.5px) translate(342.3px,0px) skewY(1.19deg) translate(-342.3px,0px); } 25% { transform: translate(0px,0.56px) translate(342.3px,0px) skewY(2.94deg) translate(-342.3px,0px); } 33.33% { transform: translate(0px,0.48px) translate(342.3px,0px) skewY(3.9deg) translate(-342.3px,0px); } 41.67% { transform: translate(0px,0.27px) translate(342.3px,0px) skewY(3.82deg) translate(-342.3px,0px); } 50% { transform: translate(0px,-0.02px) translate(342.3px,0px) skewY(2.72deg) translate(-342.3px,0px); } 58.33% { transform: translate(0px,-0.3px) translate(342.3px,0px) skewY(0.88deg) translate(-342.3px,0px); } 66.67% { transform: translate(0px,-0.5px) translate(342.3px,0px) skewY(-1.19deg) translate(-342.3px,0px); } 75% { transform: translate(0px,-0.56px) translate(342.3px,0px) skewY(-2.94deg) translate(-342.3px,0px); } 83.33% { transform: translate(0px,-0.48px) translate(342.3px,0px) skewY(-3.9deg) translate(-342.3px,0px); } 91.67% { transform: translate(0px,-0.27px) translate(342.3px,0px) skewY(-3.82deg) translate(-342.3px,0px); } 100% { transform: translate(0px,0.02px) translate(342.3px,0px) skewY(-2.72deg) translate(-342.3px,0px); } }
+    @keyframes roo-fs2 { 0% { transform: translate(0px,-0.49px) translate(349.5px,0px) skewY(-5.31deg) translate(-349.5px,0px); } 8.33% { transform: translate(0px,-0.06px) translate(349.5px,0px) skewY(-4.8deg) translate(-349.5px,0px); } 16.67% { transform: translate(0px,0.38px) translate(349.5px,0px) skewY(-3deg) translate(-349.5px,0px); } 25% { transform: translate(0px,0.72px) translate(349.5px,0px) skewY(-0.39deg) translate(-349.5px,0px); } 33.33% { transform: translate(0px,0.87px) translate(349.5px,0px) skewY(2.32deg) translate(-349.5px,0px); } 41.67% { transform: translate(0px,0.78px) translate(349.5px,0px) skewY(4.41deg) translate(-349.5px,0px); } 50% { transform: translate(0px,0.49px) translate(349.5px,0px) skewY(5.31deg) translate(-349.5px,0px); } 58.33% { transform: translate(0px,0.06px) translate(349.5px,0px) skewY(4.8deg) translate(-349.5px,0px); } 66.67% { transform: translate(0px,-0.38px) translate(349.5px,0px) skewY(3deg) translate(-349.5px,0px); } 75% { transform: translate(0px,-0.72px) translate(349.5px,0px) skewY(0.39deg) translate(-349.5px,0px); } 83.33% { transform: translate(0px,-0.87px) translate(349.5px,0px) skewY(-2.32deg) translate(-349.5px,0px); } 91.67% { transform: translate(0px,-0.78px) translate(349.5px,0px) skewY(-4.41deg) translate(-349.5px,0px); } 100% { transform: translate(0px,-0.49px) translate(349.5px,0px) skewY(-5.31deg) translate(-349.5px,0px); } }
+    @keyframes roo-fs3 { 0% { transform: translate(0px,-1.1px) translate(356.7px,0px) skewY(-4.41deg) translate(-356.7px,0px); } 8.33% { transform: translate(0px,-0.76px) translate(356.7px,0px) skewY(-6.36deg) translate(-356.7px,0px); } 16.67% { transform: translate(0px,-0.22px) translate(356.7px,0px) skewY(-6.61deg) translate(-356.7px,0px); } 25% { transform: translate(0px,0.38px) translate(356.7px,0px) skewY(-5.11deg) translate(-356.7px,0px); } 33.33% { transform: translate(0px,0.88px) translate(356.7px,0px) skewY(-2.22deg) translate(-356.7px,0px); } 41.67% { transform: translate(0px,1.14px) translate(356.7px,0px) skewY(1.27deg) translate(-356.7px,0px); } 50% { transform: translate(0px,1.1px) translate(356.7px,0px) skewY(4.41deg) translate(-356.7px,0px); } 58.33% { transform: translate(0px,0.76px) translate(356.7px,0px) skewY(6.36deg) translate(-356.7px,0px); } 66.67% { transform: translate(0px,0.22px) translate(356.7px,0px) skewY(6.61deg) translate(-356.7px,0px); } 75% { transform: translate(0px,-0.38px) translate(356.7px,0px) skewY(5.11deg) translate(-356.7px,0px); } 83.33% { transform: translate(0px,-0.88px) translate(356.7px,0px) skewY(2.22deg) translate(-356.7px,0px); } 91.67% { transform: translate(0px,-1.14px) translate(356.7px,0px) skewY(-1.27deg) translate(-356.7px,0px); } 100% { transform: translate(0px,-1.1px) translate(356.7px,0px) skewY(-4.41deg) translate(-356.7px,0px); } }
+    @keyframes roo-fs4 { 0% { transform: translate(0px,-1.36px) translate(363.9px,0px) skewY(0.2deg) translate(-363.9px,0px); } 8.33% { transform: translate(0px,-1.41px) translate(363.9px,0px) skewY(-3.91deg) translate(-363.9px,0px); } 16.67% { transform: translate(0px,-1.08px) translate(363.9px,0px) skewY(-6.96deg) translate(-363.9px,0px); } 25% { transform: translate(0px,-0.46px) translate(363.9px,0px) skewY(-8.14deg) translate(-363.9px,0px); } 33.33% { transform: translate(0px,0.28px) translate(363.9px,0px) skewY(-7.16deg) translate(-363.9px,0px); } 41.67% { transform: translate(0px,0.95px) translate(363.9px,0px) skewY(-4.26deg) translate(-363.9px,0px); } 50% { transform: translate(0px,1.36px) translate(363.9px,0px) skewY(-0.2deg) translate(-363.9px,0px); } 58.33% { transform: translate(0px,1.41px) translate(363.9px,0px) skewY(3.91deg) translate(-363.9px,0px); } 66.67% { transform: translate(0px,1.08px) translate(363.9px,0px) skewY(6.96deg) translate(-363.9px,0px); } 75% { transform: translate(0px,0.46px) translate(363.9px,0px) skewY(8.14deg) translate(-363.9px,0px); } 83.33% { transform: translate(0px,-0.28px) translate(363.9px,0px) skewY(7.16deg) translate(-363.9px,0px); } 91.67% { transform: translate(0px,-0.95px) translate(363.9px,0px) skewY(4.26deg) translate(-363.9px,0px); } 100% { transform: translate(0px,-1.36px) translate(363.9px,0px) skewY(0.2deg) translate(-363.9px,0px); } }
+    @keyframes roo-fs5 { 0% { transform: translate(0px,-0.94px) translate(371.1px,0px) skewY(6.43deg) translate(-371.1px,0px); } 8.33% { transform: translate(0px,-1.53px) translate(371.1px,0px) skewY(2.03deg) translate(-371.1px,0px); } 16.67% { transform: translate(0px,-1.7px) translate(371.1px,0px) skewY(-2.93deg) translate(-371.1px,0px); } 25% { transform: translate(0px,-1.42px) translate(371.1px,0px) skewY(-7.08deg) translate(-371.1px,0px); } 33.33% { transform: translate(0px,-0.76px) translate(371.1px,0px) skewY(-9.31deg) translate(-371.1px,0px); } 41.67% { transform: translate(0px,0.11px) translate(371.1px,0px) skewY(-9.07deg) translate(-371.1px,0px); } 50% { transform: translate(0px,0.94px) translate(371.1px,0px) skewY(-6.43deg) translate(-371.1px,0px); } 58.33% { transform: translate(0px,1.53px) translate(371.1px,0px) skewY(-2.03deg) translate(-371.1px,0px); } 66.67% { transform: translate(0px,1.7px) translate(371.1px,0px) skewY(2.93deg) translate(-371.1px,0px); } 75% { transform: translate(0px,1.42px) translate(371.1px,0px) skewY(7.08deg) translate(-371.1px,0px); } 83.33% { transform: translate(0px,0.76px) translate(371.1px,0px) skewY(9.31deg) translate(-371.1px,0px); } 91.67% { transform: translate(0px,-0.11px) translate(371.1px,0px) skewY(9.07deg) translate(-371.1px,0px); } 100% { transform: translate(0px,-0.94px) translate(371.1px,0px) skewY(6.43deg) translate(-371.1px,0px); } }
+    @keyframes roo-fs6 { 0% { transform: translate(0px,0.15px) translate(378.3px,0px) skewY(10.77deg) translate(-378.3px,0px); } 8.33% { transform: translate(0px,-0.85px) translate(378.3px,0px) skewY(8.63deg) translate(-378.3px,0px); } 16.67% { transform: translate(0px,-1.62px) translate(378.3px,0px) skewY(4.16deg) translate(-378.3px,0px); } 25% { transform: translate(0px,-1.96px) translate(378.3px,0px) skewY(-1.48deg) translate(-378.3px,0px); } 33.33% { transform: translate(0px,-1.77px) translate(378.3px,0px) skewY(-6.7deg) translate(-378.3px,0px); } 41.67% { transform: translate(0px,-1.11px) translate(378.3px,0px) skewY(-10.08deg) translate(-378.3px,0px); } 50% { transform: translate(0px,-0.15px) translate(378.3px,0px) skewY(-10.77deg) translate(-378.3px,0px); } 58.33% { transform: translate(0px,0.85px) translate(378.3px,0px) skewY(-8.63deg) translate(-378.3px,0px); } 66.67% { transform: translate(0px,1.62px) translate(378.3px,0px) skewY(-4.16deg) translate(-378.3px,0px); } 75% { transform: translate(0px,1.96px) translate(378.3px,0px) skewY(1.48deg) translate(-378.3px,0px); } 83.33% { transform: translate(0px,1.77px) translate(378.3px,0px) skewY(6.7deg) translate(-378.3px,0px); } 91.67% { transform: translate(0px,1.11px) translate(378.3px,0px) skewY(10.08deg) translate(-378.3px,0px); } 100% { transform: translate(0px,0.15px) translate(378.3px,0px) skewY(10.77deg) translate(-378.3px,0px); } }
+    @keyframes roo-fs7 { 0% { transform: translate(0px,1.49px) translate(385.5px,0px) skewY(10.4deg) translate(-385.5px,0px); } 8.33% { transform: translate(0px,0.47px) translate(385.5px,0px) skewY(12.18deg) translate(-385.5px,0px); } 16.67% { transform: translate(0px,-0.68px) translate(385.5px,0px) skewY(10.77deg) translate(-385.5px,0px); } 25% { transform: translate(0px,-1.64px) translate(385.5px,0px) skewY(6.48deg) translate(-385.5px,0px); } 33.33% { transform: translate(0px,-2.17px) translate(385.5px,0px) skewY(0.38deg) translate(-385.5px,0px); } 41.67% { transform: translate(0px,-2.11px) translate(385.5px,0px) skewY(-5.83deg) translate(-385.5px,0px); } 50% { transform: translate(0px,-1.49px) translate(385.5px,0px) skewY(-10.4deg) translate(-385.5px,0px); } 58.33% { transform: translate(0px,-0.47px) translate(385.5px,0px) skewY(-12.18deg) translate(-385.5px,0px); } 66.67% { transform: translate(0px,0.68px) translate(385.5px,0px) skewY(-10.77deg) translate(-385.5px,0px); } 75% { transform: translate(0px,1.64px) translate(385.5px,0px) skewY(-6.48deg) translate(-385.5px,0px); } 83.33% { transform: translate(0px,2.17px) translate(385.5px,0px) skewY(-0.38deg) translate(-385.5px,0px); } 91.67% { transform: translate(0px,2.11px) translate(385.5px,0px) skewY(5.83deg) translate(-385.5px,0px); } 100% { transform: translate(0px,1.49px) translate(385.5px,0px) skewY(10.4deg) translate(-385.5px,0px); } }
+    @keyframes roo-fs8 { 0% { transform: translate(0px,2.43px) translate(392.7px,0px) skewY(4.47deg) translate(-392.7px,0px); } 8.33% { transform: translate(0px,1.9px) translate(392.7px,0px) skewY(10.25deg) translate(-392.7px,0px); } 16.67% { transform: translate(0px,0.85px) translate(392.7px,0px) skewY(13.23deg) translate(-392.7px,0px); } 25% { transform: translate(0px,-0.42px) translate(392.7px,0px) skewY(12.75deg) translate(-392.7px,0px); } 33.33% { transform: translate(0px,-1.58px) translate(392.7px,0px) skewY(8.92deg) translate(-392.7px,0px); } 41.67% { transform: translate(0px,-2.32px) translate(392.7px,0px) skewY(2.61deg) translate(-392.7px,0px); } 50% { transform: translate(0px,-2.43px) translate(392.7px,0px) skewY(-4.47deg) translate(-392.7px,0px); } 58.33% { transform: translate(0px,-1.9px) translate(392.7px,0px) skewY(-10.25deg) translate(-392.7px,0px); } 66.67% { transform: translate(0px,-0.85px) translate(392.7px,0px) skewY(-13.23deg) translate(-392.7px,0px); } 75% { transform: translate(0px,0.42px) translate(392.7px,0px) skewY(-12.75deg) translate(-392.7px,0px); } 83.33% { transform: translate(0px,1.58px) translate(392.7px,0px) skewY(-8.92deg) translate(-392.7px,0px); } 91.67% { transform: translate(0px,2.32px) translate(392.7px,0px) skewY(-2.61deg) translate(-392.7px,0px); } 100% { transform: translate(0px,2.43px) translate(392.7px,0px) skewY(4.47deg) translate(-392.7px,0px); } }
+    @keyframes roo-fs9 { 0% { transform: translate(0px,2.39px) translate(399.9px,0px) skewY(-5.12deg) translate(-399.9px,0px); } 8.33% { transform: translate(0px,2.71px) translate(399.9px,0px) skewY(2.63deg) translate(-399.9px,0px); } 16.67% { transform: translate(0px,2.31px) translate(399.9px,0px) skewY(9.59deg) translate(-399.9px,0px); } 25% { transform: translate(0px,1.28px) translate(399.9px,0px) skewY(13.87deg) translate(-399.9px,0px); } 33.33% { transform: translate(0px,-0.09px) translate(399.9px,0px) skewY(14.5deg) translate(-399.9px,0px); } 41.67% { transform: translate(0px,-1.43px) translate(399.9px,0px) skewY(11.37deg) translate(-399.9px,0px); } 50% { transform: translate(0px,-2.39px) translate(399.9px,0px) skewY(5.12deg) translate(-399.9px,0px); } 58.33% { transform: translate(0px,-2.71px) translate(399.9px,0px) skewY(-2.63deg) translate(-399.9px,0px); } 66.67% { transform: translate(0px,-2.31px) translate(399.9px,0px) skewY(-9.59deg) translate(-399.9px,0px); } 75% { transform: translate(0px,-1.28px) translate(399.9px,0px) skewY(-13.87deg) translate(-399.9px,0px); } 83.33% { transform: translate(0px,0.09px) translate(399.9px,0px) skewY(-14.5deg) translate(-399.9px,0px); } 91.67% { transform: translate(0px,1.43px) translate(399.9px,0px) skewY(-11.37deg) translate(-399.9px,0px); } 100% { transform: translate(0px,2.39px) translate(399.9px,0px) skewY(-5.12deg) translate(-399.9px,0px); } }
+    @keyframes roo-fsh { 0% { opacity: 0; } 8.33% { opacity: 0; } 16.67% { opacity: 0; } 25% { opacity: 0; } 33.33% { opacity: 0.5; } 41.67% { opacity: 0.87; } 50% { opacity: 1; } 58.33% { opacity: 0.87; } 66.67% { opacity: 0.5; } 75% { opacity: 0; } 83.33% { opacity: 0; } 91.67% { opacity: 0; } 100% { opacity: 0; } }
+    #switcheroo.roo-flag .roo-fs0 { animation: roo-fs0 1.3s linear infinite; } #switcheroo.roo-flag .roo-fsh0 { animation: roo-fsh 1.3s linear -0.17s infinite; }
+    #switcheroo.roo-flag .roo-fs1 { animation: roo-fs1 1.3s linear infinite; } #switcheroo.roo-flag .roo-fsh1 { animation: roo-fsh 1.3s linear -0.03s infinite; }
+    #switcheroo.roo-flag .roo-fs2 { animation: roo-fs2 1.3s linear infinite; } #switcheroo.roo-flag .roo-fsh2 { animation: roo-fsh 1.3s linear -1.19s infinite; }
+    #switcheroo.roo-flag .roo-fs3 { animation: roo-fs3 1.3s linear infinite; } #switcheroo.roo-flag .roo-fsh3 { animation: roo-fsh 1.3s linear -1.05s infinite; }
+    #switcheroo.roo-flag .roo-fs4 { animation: roo-fs4 1.3s linear infinite; } #switcheroo.roo-flag .roo-fsh4 { animation: roo-fsh 1.3s linear -0.91s infinite; }
+    #switcheroo.roo-flag .roo-fs5 { animation: roo-fs5 1.3s linear infinite; } #switcheroo.roo-flag .roo-fsh5 { animation: roo-fsh 1.3s linear -0.78s infinite; }
+    #switcheroo.roo-flag .roo-fs6 { animation: roo-fs6 1.3s linear infinite; } #switcheroo.roo-flag .roo-fsh6 { animation: roo-fsh 1.3s linear -0.64s infinite; }
+    #switcheroo.roo-flag .roo-fs7 { animation: roo-fs7 1.3s linear infinite; } #switcheroo.roo-flag .roo-fsh7 { animation: roo-fsh 1.3s linear -0.5s infinite; }
+    #switcheroo.roo-flag .roo-fs8 { animation: roo-fs8 1.3s linear infinite; } #switcheroo.roo-flag .roo-fsh8 { animation: roo-fsh 1.3s linear -0.36s infinite; }
+    #switcheroo.roo-flag .roo-fs9 { animation: roo-fs9 1.3s linear infinite; } #switcheroo.roo-flag .roo-fsh9 { animation: roo-fsh 1.3s linear -0.23s infinite; }
+
+    /* one shot actions: add the class, remove it on animationend */
+    @keyframes roo-hop {
+      0%   { transform: translateY(0) scale(1,1); }
+      14%  { transform: translateY(0) scale(1.08,0.88); }
+      34%  { transform: translateY(-78px) scale(0.94,1.08); }
+      52%  { transform: translateY(-90px) scale(1,1); }
+      78%  { transform: translateY(0) scale(1.1,0.9); }
+      90%  { transform: translateY(0) scale(0.98,1.03); }
+      100% { transform: translateY(0) scale(1,1); }
+    }
+    @keyframes roo-hop-shadow { 0%,100% { transform: scale(1); opacity: 1; } 14% { transform: scale(1.06); } 52% { transform: scale(0.55); opacity: 0.5; } 78% { transform: scale(1.08); opacity: 1; } }
+    @keyframes roo-hop-tail   { 0%,100% { transform: rotate(0); } 14% { transform: rotate(-4deg); } 45% { transform: rotate(16deg); } 78% { transform: rotate(-6deg); } }
+    @keyframes roo-hop-ears   { 0%,100% { transform: rotate(0); } 14% { transform: rotate(4deg); } 45% { transform: rotate(-22deg); } 80% { transform: rotate(6deg); } }
+    @keyframes roo-hop-hold   { 0%,100% { transform: rotate(0); } 14% { transform: rotate(5deg); } 45% { transform: rotate(-7deg); } 80% { transform: rotate(8deg); } 92% { transform: rotate(-2deg); } }
+    @keyframes roo-hop-lids   { 0%,25%,70%,100% { transform: scaleY(0); } 35%,60% { transform: scaleY(0.45); } }
+
+    #switcheroo.roo-hop #roo       { animation: roo-hop 0.95s cubic-bezier(.3,.7,.4,1) both; }
+    #switcheroo.roo-hop #shadow    { animation: roo-hop-shadow 0.95s cubic-bezier(.3,.7,.4,1) both; }
+    #switcheroo.roo-hop #tail      { animation: roo-hop-tail 0.95s ease-in-out both; }
+    #switcheroo.roo-hop #ear-front,
+    #switcheroo.roo-hop #ear-back  { animation: roo-hop-ears 0.95s ease-in-out both; }
+    #switcheroo.roo-hop #flag,
+    #switcheroo.roo-hop #arm-flag  { animation: roo-hop-hold 0.95s ease-in-out both; }
+    #switcheroo.roo-hop #lid-front,
+    #switcheroo.roo-hop #lid-back  { animation: roo-hop-lids 0.95s ease-in-out both; }
+
+    /* the switch: mirror the signal so the pixel and smooth halves trade places */
+    #switcheroo #wifi { transition: transform 0.35s cubic-bezier(.5,1.8,.5,1); }
+    #switcheroo.roo-swapped #wifi { transform: scaleX(-1); }
+
+    /* thumbs up: the paw rocks at the wrist, the head nods */
+    @keyframes roo-thumb      { 0%,100% { transform: rotate(0); } 15% { transform: rotate(-12deg); } 32% { transform: rotate(3deg); } 50% { transform: rotate(-12deg); } 68% { transform: rotate(2deg); } }
+    @keyframes roo-thumb-head { 0%,100% { transform: rotate(0); } 18%,52% { transform: rotate(5deg); } 34% { transform: rotate(-1deg); } }
+    #switcheroo.roo-thumb #paw-thumb { animation: roo-thumb 1.1s ease-in-out both; }
+    #switcheroo.roo-thumb #head      { animation: roo-thumb-head 1.1s ease-in-out both; }
+
+    /* flick the flag: rotates around the paw that holds it */
+    @keyframes roo-flick { 0%,100% { transform: rotate(0); } 16% { transform: rotate(16deg); } 34% { transform: rotate(-6deg); } 52% { transform: rotate(13deg); } 70% { transform: rotate(-4deg); } 86% { transform: rotate(6deg); } }
+    #switcheroo.roo-flick #flag-wave { animation: roo-flick 1.3s ease-in-out both; }
+
+    @media (prefers-reduced-motion: reduce) {
+      #switcheroo * { animation: none !important; transition: none !important; }
+    }
+  </style>
+  <defs>
+    <filter id="roo-arm-shadow" x="-30%" y="-20%" width="160%" height="150%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="1.8"/>
+      <feOffset dx="3.2" dy="3.6" result="blur"/>
+      <feFlood flood-color="#001C3D" flood-opacity="0.55"/>
+      <feComposite in2="blur" operator="in"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <g id="flag-art"><rect x="331.5" y="122" width="24.4" height="48" fill="#0055A4"/><rect x="355.5" y="122" width="24.4" height="48" fill="#ffffff"/><path d="M355.5,122.6 h24 M355.5,169.4 h24" stroke="#C9D2DD" stroke-width="1.2"/><rect x="379.5" y="122" width="24" height="48" fill="#EF4135"/><g transform="translate(366.5 135.42) scale(0.115) translate(-132 -55)"><g fill="#EF4135"><rect x="86" y="58" width="7" height="6"/><rect x="94" y="58" width="6" height="6"/><rect x="101" y="58" width="7" height="6"/><rect x="109" y="58" width="7" height="6"/><rect x="117" y="58" width="6" height="6"/><rect x="71" y="65" width="6" height="7"/><rect x="78" y="65" width="7" height="7"/><rect x="86" y="65" width="7" height="7"/><rect x="94" y="65" width="6" height="7"/><rect x="101" y="65" width="7" height="7"/><rect x="109" y="65" width="7" height="7"/><rect x="117" y="65" width="6" height="7"/><rect x="55" y="73" width="7" height="7"/><rect x="63" y="73" width="7" height="7"/><rect x="71" y="73" width="6" height="7"/><rect x="78" y="73" width="7" height="7"/><rect x="86" y="73" width="7" height="7"/><rect x="94" y="73" width="6" height="7"/><rect x="101" y="73" width="7" height="7"/><rect x="109" y="73" width="7" height="7"/><rect x="117" y="73" width="6" height="7"/><rect x="47" y="81" width="7" height="6"/><rect x="55" y="81" width="7" height="6"/><rect x="63" y="81" width="7" height="6"/><rect x="71" y="81" width="6" height="6"/><rect x="78" y="81" width="7" height="6"/><rect x="86" y="81" width="7" height="6"/><rect x="40" y="88" width="6" height="7"/><rect x="47" y="88" width="7" height="7"/><rect x="55" y="88" width="7" height="7"/><rect x="63" y="88" width="7" height="7"/><rect x="71" y="88" width="6" height="7"/><rect x="40" y="96" width="6" height="7"/><rect x="47" y="96" width="7" height="7"/><rect x="55" y="96" width="7" height="7"/><rect x="94" y="96" width="6" height="7"/><rect x="101" y="96" width="7" height="7"/><rect x="109" y="96" width="7" height="7"/><rect x="117" y="96" width="6" height="7"/><rect x="47" y="104" width="7" height="6"/><rect x="78" y="104" width="7" height="6"/><rect x="86" y="104" width="7" height="6"/><rect x="94" y="104" width="6" height="6"/><rect x="101" y="104" width="7" height="6"/><rect x="109" y="104" width="7" height="6"/><rect x="117" y="104" width="6" height="6"/><rect x="71" y="111" width="6" height="7"/><rect x="78" y="111" width="7" height="7"/><rect x="86" y="111" width="7" height="7"/><rect x="94" y="111" width="6" height="7"/><rect x="101" y="111" width="7" height="7"/><rect x="109" y="111" width="7" height="7"/><rect x="117" y="111" width="6" height="7"/><rect x="63" y="119" width="7" height="7"/><rect x="71" y="119" width="6" height="7"/><rect x="78" y="119" width="7" height="7"/><rect x="86" y="119" width="7" height="7"/><rect x="94" y="119" width="6" height="7"/><rect x="71" y="127" width="6" height="7"/><rect x="78" y="127" width="7" height="7"/><rect x="101" y="135" width="7" height="6"/><rect x="109" y="135" width="7" height="6"/><rect x="117" y="135" width="6" height="6"/><rect x="94" y="142" width="6" height="7"/><rect x="101" y="142" width="7" height="7"/><rect x="109" y="142" width="7" height="7"/><rect x="117" y="142" width="6" height="7"/><rect x="94" y="150" width="6" height="7"/><rect x="101" y="150" width="7" height="7"/><rect x="109" y="150" width="7" height="7"/><rect x="117" y="150" width="6" height="7"/><rect x="101" y="158" width="7" height="6"/><rect x="117" y="173" width="6" height="7"/><rect x="109" y="181" width="7" height="6"/><rect x="117" y="181" width="6" height="6"/><rect x="117" y="188" width="6" height="7"/></g><g fill="#0055A4"><path d="M132,133 A51,51 0 0 1 166.78,146.7 A11,11 0 0 1 151.78,162.79 A29,29 0 0 0 132,155 Z"/><path d="M132,94 A90,90 0 0 1 193.38,118.18 A11,11 0 0 1 178.38,134.27 A68,68 0 0 0 132,116 Z"/><path d="M132,55 A129,129 0 0 1 219.98,89.66 A11,11 0 0 1 204.97,105.75 A107,107 0 0 0 132,77 Z"/><path d="M132,171 A10.5,13 0 0 1 132,197 Z"/></g><path d="M103.5,229 Q118,234.8 128,233.2 Q138.5,231.6 146.2,225.2 L143.4,219.2 L161,215.4 L157.2,232.6 L151.2,227.6 Q140.5,236.8 127.5,238.6 Q113,239.4 103.5,229 Z" fill="#1A1A1A"/></g></g>
+    <clipPath id="roo-fs0" clipPathUnits="userSpaceOnUse"><rect x="330.5" y="110" width="8.6" height="72"/></clipPath><clipPath id="roo-fs1" clipPathUnits="userSpaceOnUse"><rect x="338.3" y="110" width="8" height="72"/></clipPath><clipPath id="roo-fs2" clipPathUnits="userSpaceOnUse"><rect x="345.5" y="110" width="8" height="72"/></clipPath><clipPath id="roo-fs3" clipPathUnits="userSpaceOnUse"><rect x="352.7" y="110" width="8" height="72"/></clipPath><clipPath id="roo-fs4" clipPathUnits="userSpaceOnUse"><rect x="359.9" y="110" width="8" height="72"/></clipPath><clipPath id="roo-fs5" clipPathUnits="userSpaceOnUse"><rect x="367.1" y="110" width="8" height="72"/></clipPath><clipPath id="roo-fs6" clipPathUnits="userSpaceOnUse"><rect x="374.3" y="110" width="8" height="72"/></clipPath><clipPath id="roo-fs7" clipPathUnits="userSpaceOnUse"><rect x="381.5" y="110" width="8" height="72"/></clipPath><clipPath id="roo-fs8" clipPathUnits="userSpaceOnUse"><rect x="388.7" y="110" width="8" height="72"/></clipPath><clipPath id="roo-fs9" clipPathUnits="userSpaceOnUse"><rect x="395.9" y="110" width="7.6" height="72"/></clipPath>
+  </defs>
+
+  <g id="shadow">
+    <ellipse cx="228" cy="370" rx="132" ry="9" fill="#14171C" opacity="0.14"/>
+  </g>
+
+  <g id="roo">
+    <g id="tail">
+      <path d="M192,272 C150,290 102,322 50,348 C40,353 42,365 54,364 C104,360 158,346 204,330 Z" fill="#003D78"/>
+      <path d="M188,284 C150,302 108,328 64,350" fill="none" stroke="#0055A4" stroke-width="5" stroke-linecap="round" opacity="0.55"/>
+    </g>
+
+    <g id="foot-back">
+      <path d="M222,350 C260,352 318,353 346,356 C357,357 358,367 347,368 L224,368 C212,367 212,351 222,350 Z" fill="#003D78"/>
+    </g>
+
+    <g id="flag">
+      <g id="flag-wave">
+        <g transform="rotate(10 330 246)">
+          <rect id="flag-stick" x="328.3" y="117" width="3.4" height="146" rx="1.7" fill="#ffffff" stroke="#9AA1AB" stroke-width="1.1"/>
+          <g id="flag-cloth"><g class="roo-fs roo-fs0" clip-path="url(#roo-fs0)" transform="translate(0 0.1) translate(335.1 0) skewY(1.51) translate(-335.1 0)"><use href="#flag-art"/><rect class="roo-fsh roo-fsh0" x="331.1" y="122" width="8" height="48" fill="#14171C" fill-opacity="0.01" opacity="0"/></g><g class="roo-fs roo-fs1" clip-path="url(#roo-fs1)" transform="translate(0 0.02) translate(342.3 0) skewY(-2.72) translate(-342.3 0)"><use href="#flag-art"/><rect class="roo-fsh roo-fsh1" x="338.3" y="122" width="8" height="48" fill="#14171C" fill-opacity="0.02" opacity="0"/></g><g class="roo-fs roo-fs2" clip-path="url(#roo-fs2)" transform="translate(0 -0.49) translate(349.5 0) skewY(-5.31) translate(-349.5 0)"><use href="#flag-art"/><rect class="roo-fsh roo-fsh2" x="345.5" y="122" width="8" height="48" fill="#14171C" fill-opacity="0.04" opacity="0"/></g><g class="roo-fs roo-fs3" clip-path="url(#roo-fs3)" transform="translate(0 -1.1) translate(356.7 0) skewY(-4.41) translate(-356.7 0)"><use href="#flag-art"/><rect class="roo-fsh roo-fsh3" x="352.7" y="122" width="8" height="48" fill="#14171C" fill-opacity="0.05" opacity="0"/></g><g class="roo-fs roo-fs4" clip-path="url(#roo-fs4)" transform="translate(0 -1.36) translate(363.9 0) skewY(0.2) translate(-363.9 0)"><use href="#flag-art"/><rect class="roo-fsh roo-fsh4" x="359.9" y="122" width="8" height="48" fill="#14171C" fill-opacity="0.06" opacity="0.29"/></g><g class="roo-fs roo-fs5" clip-path="url(#roo-fs5)" transform="translate(0 -0.94) translate(371.1 0) skewY(6.43) translate(-371.1 0)"><use href="#flag-art"/><rect class="roo-fsh roo-fsh5" x="367.1" y="122" width="8" height="48" fill="#14171C" fill-opacity="0.07" opacity="0.82"/></g><g class="roo-fs roo-fs6" clip-path="url(#roo-fs6)" transform="translate(0 0.15) translate(378.3 0) skewY(10.77) translate(-378.3 0)"><use href="#flag-art"/><rect class="roo-fsh roo-fsh6" x="374.3" y="122" width="8" height="48" fill="#14171C" fill-opacity="0.08" opacity="1"/></g><g class="roo-fs roo-fs7" clip-path="url(#roo-fs7)" transform="translate(0 1.49) translate(385.5 0) skewY(10.4) translate(-385.5 0)"><use href="#flag-art"/><rect class="roo-fsh roo-fsh7" x="381.5" y="122" width="8" height="48" fill="#14171C" fill-opacity="0.09" opacity="0.75"/></g><g class="roo-fs roo-fs8" clip-path="url(#roo-fs8)" transform="translate(0 2.43) translate(392.7 0) skewY(4.47) translate(-392.7 0)"><use href="#flag-art"/><rect class="roo-fsh roo-fsh8" x="388.7" y="122" width="8" height="48" fill="#14171C" fill-opacity="0.1" opacity="0.19"/></g><g class="roo-fs roo-fs9" clip-path="url(#roo-fs9)" transform="translate(0 2.39) translate(399.9 0) skewY(-5.12) translate(-399.9 0)"><use href="#flag-art"/><rect class="roo-fsh roo-fsh9" x="395.9" y="122" width="8" height="48" fill="#14171C" fill-opacity="0.11" opacity="0"/></g></g>
+        </g>
+      </g>
+    </g>
+
+    <g id="arm-flag">
+      <path d="M268,226 C286,232 302,238 320,239.5 L321,253 C302,253 286,249 266,242 Z" fill="#003D78"/>
+      <ellipse cx="324.5" cy="246" rx="8" ry="7.6" fill="#003D78"/>
+      <ellipse cx="333" cy="240.6" rx="3.7" ry="3" fill="#003D78"/>
+      <ellipse cx="333.2" cy="246.2" rx="3.7" ry="3" fill="#003D78"/>
+      <ellipse cx="332.6" cy="251.6" rx="3.5" ry="2.8" fill="#003D78"/>
+    </g>
+
+    <g id="torso">
+      <path id="body" d="M214,138 C186,160 162,232 162,292 C162,338 194,360 234,358 C274,356 294,326 290,276 C286,224 274,178 258,146 C246,126 226,128 214,138 Z" fill="#0055A4"/>
+      <path id="belly" d="M246,168 C264,200 278,248 278,288 C278,322 262,344 240,344 C220,344 210,318 212,286 C214,244 228,200 246,168 Z" fill="#E3EEF9"/>
+    </g>
+
+    <g id="leg-front">
+      <path id="thigh" d="M178,268 C210,256 254,280 256,318 C258,346 234,362 204,362 C178,362 162,340 163,314 C164,294 168,276 178,268 Z" fill="#0055A4" stroke="#003D78" stroke-width="1.6" stroke-opacity="0.6"/>
+      <path d="M182,290 C200,282 226,292 236,312" fill="none" stroke="#003D78" stroke-width="3" stroke-linecap="round" opacity="0.35"/>
+      <path id="foot-front" d="M188,348 C224,350 292,352 330,356 C342,357 343,368 331,369 L192,369 C178,368 177,349 188,348 Z" fill="#0055A4"/>
+      <path d="M318,358 L318,368 M304,357.5 L304,368" stroke="#003D78" stroke-width="2" stroke-linecap="round" opacity="0.45"/>
+    </g>
+
+    <g id="pouch">
+      <path id="pouch-front" d="M212,270 C228,282 264,282 280,268 C282,290 268,305 247,306 C226,307 212,294 212,270 Z" fill="#C9DCF1"/>
+      <path d="M212,270 C228,282 264,282 280,268" fill="none" stroke="#0055A4" stroke-width="2.6" stroke-linecap="round"/>
+    </g>
+
+    <g id="belly-logo">
+      <g id="wifi"><g transform="translate(247 214) scale(0.25) translate(-132 -55)"><g id="wifi-pixel" fill="#EF4135"><rect x="86" y="58" width="7" height="6"/><rect x="94" y="58" width="6" height="6"/><rect x="101" y="58" width="7" height="6"/><rect x="109" y="58" width="7" height="6"/><rect x="117" y="58" width="6" height="6"/><rect x="71" y="65" width="6" height="7"/><rect x="78" y="65" width="7" height="7"/><rect x="86" y="65" width="7" height="7"/><rect x="94" y="65" width="6" height="7"/><rect x="101" y="65" width="7" height="7"/><rect x="109" y="65" width="7" height="7"/><rect x="117" y="65" width="6" height="7"/><rect x="55" y="73" width="7" height="7"/><rect x="63" y="73" width="7" height="7"/><rect x="71" y="73" width="6" height="7"/><rect x="78" y="73" width="7" height="7"/><rect x="86" y="73" width="7" height="7"/><rect x="94" y="73" width="6" height="7"/><rect x="101" y="73" width="7" height="7"/><rect x="109" y="73" width="7" height="7"/><rect x="117" y="73" width="6" height="7"/><rect x="47" y="81" width="7" height="6"/><rect x="55" y="81" width="7" height="6"/><rect x="63" y="81" width="7" height="6"/><rect x="71" y="81" width="6" height="6"/><rect x="78" y="81" width="7" height="6"/><rect x="86" y="81" width="7" height="6"/><rect x="40" y="88" width="6" height="7"/><rect x="47" y="88" width="7" height="7"/><rect x="55" y="88" width="7" height="7"/><rect x="63" y="88" width="7" height="7"/><rect x="71" y="88" width="6" height="7"/><rect x="40" y="96" width="6" height="7"/><rect x="47" y="96" width="7" height="7"/><rect x="55" y="96" width="7" height="7"/><rect x="94" y="96" width="6" height="7"/><rect x="101" y="96" width="7" height="7"/><rect x="109" y="96" width="7" height="7"/><rect x="117" y="96" width="6" height="7"/><rect x="47" y="104" width="7" height="6"/><rect x="78" y="104" width="7" height="6"/><rect x="86" y="104" width="7" height="6"/><rect x="94" y="104" width="6" height="6"/><rect x="101" y="104" width="7" height="6"/><rect x="109" y="104" width="7" height="6"/><rect x="117" y="104" width="6" height="6"/><rect x="71" y="111" width="6" height="7"/><rect x="78" y="111" width="7" height="7"/><rect x="86" y="111" width="7" height="7"/><rect x="94" y="111" width="6" height="7"/><rect x="101" y="111" width="7" height="7"/><rect x="109" y="111" width="7" height="7"/><rect x="117" y="111" width="6" height="7"/><rect x="63" y="119" width="7" height="7"/><rect x="71" y="119" width="6" height="7"/><rect x="78" y="119" width="7" height="7"/><rect x="86" y="119" width="7" height="7"/><rect x="94" y="119" width="6" height="7"/><rect x="71" y="127" width="6" height="7"/><rect x="78" y="127" width="7" height="7"/><rect x="101" y="135" width="7" height="6"/><rect x="109" y="135" width="7" height="6"/><rect x="117" y="135" width="6" height="6"/><rect x="94" y="142" width="6" height="7"/><rect x="101" y="142" width="7" height="7"/><rect x="109" y="142" width="7" height="7"/><rect x="117" y="142" width="6" height="7"/><rect x="94" y="150" width="6" height="7"/><rect x="101" y="150" width="7" height="7"/><rect x="109" y="150" width="7" height="7"/><rect x="117" y="150" width="6" height="7"/><rect x="101" y="158" width="7" height="6"/><rect x="117" y="173" width="6" height="7"/><rect x="109" y="181" width="7" height="6"/><rect x="117" y="181" width="6" height="6"/><rect x="117" y="188" width="6" height="7"/></g><g id="wifi-smooth" fill="#0055A4"><path id="wifi-arc-1" d="M132,133 A51,51 0 0 1 166.78,146.7 A11,11 0 0 1 151.78,162.79 A29,29 0 0 0 132,155 Z"/><path id="wifi-arc-2" d="M132,94 A90,90 0 0 1 193.38,118.18 A11,11 0 0 1 178.38,134.27 A68,68 0 0 0 132,116 Z"/><path id="wifi-arc-3" d="M132,55 A129,129 0 0 1 219.98,89.66 A11,11 0 0 1 204.97,105.75 A107,107 0 0 0 132,77 Z"/><path id="wifi-dot" d="M132,171 A10.5,13 0 0 1 132,197 Z"/></g></g></g>
+      <g transform="translate(247 214) scale(0.25) translate(-132 -55)"><path id="logo-arrow" d="M103.5,229 Q118,234.8 128,233.2 Q138.5,231.6 146.2,225.2 L143.4,219.2 L161,215.4 L157.2,232.6 L151.2,227.6 Q140.5,236.8 127.5,238.6 Q113,239.4 103.5,229 Z" fill="#1A1A1A"/></g>
+    </g>
+
+    <g id="arm-thumb" filter="url(#roo-arm-shadow)">
+      <path id="upper-arm-thumb" d="M186,196 C180,215 177.5,240 180.5,258 C182,272 194,277 203,272.5 L212,270 L211,250 L200.5,251.5 C198,238 199,219 206,201 C204,191 191,188 186,196 Z" fill="#0055A4"/>
+      <g id="paw-thumb" fill="#0055A4">
+        <rect id="thumb" x="212.5" y="230.5" width="9.4" height="22" rx="4.7" transform="rotate(7 217 251)"/>
+        <rect x="206.5" y="245" width="22.5" height="28.5" rx="9.5"/>
+        <ellipse cx="228.6" cy="251.2" rx="5.3" ry="4.2"/>
+        <ellipse cx="229" cy="258.9" rx="5.3" ry="4.2"/>
+        <ellipse cx="228.4" cy="266.6" rx="5.1" ry="4.1"/>
+      </g>
+    </g>
+
+    <g id="head">
+      <g id="ear-back">
+        <path d="M216,88 C198,68 192,38 200,18 C216,30 230,58 232,84 Z" fill="#003D78"/>
+        <path d="M218,80 C206,64 202,44 205,30 C214,42 222,60 224,78 Z" fill="#C7322A"/>
+      </g>
+      <g id="ear-front">
+        <path d="M236,82 C226,58 230,28 246,10 C258,28 264,58 256,84 Z" fill="#0055A4"/>
+        <path d="M240,76 C234,58 237,36 246,22 C253,38 256,58 252,76 Z" fill="#EF4135"/>
+      </g>
+      <path id="skull" d="M204,112 C200,82 222,68 248,70 C268,72 282,84 294,96 C306,106 312,116 308,126 C304,135 291,137 278,135 C264,134 252,140 240,144 C218,150 206,134 204,112 Z" fill="#0055A4"/>
+      <path id="muzzle" d="M258,122 C276,116 298,118 308,126 C304,135 291,137 278,135 C266,134 254,131 258,122 Z" fill="#E3EEF9"/>
+      <ellipse id="cheek" cx="282" cy="118" rx="7" ry="4.5" fill="#EF4135" opacity="0.28"/>
+      <ellipse id="nose" cx="305" cy="114" rx="7" ry="5.4" fill="#14171C"/>
+      <ellipse cx="303" cy="112" rx="2.2" ry="1.4" fill="#ffffff" opacity="0.6"/>
+      <path id="mouth" d="M286,129 Q294,134 302,128" fill="none" stroke="#14171C" stroke-width="2.2" stroke-linecap="round"/>
+      <g id="eye-back">
+        <ellipse cx="248" cy="94" rx="7.5" ry="9.5" fill="#ffffff"/>
+      </g>
+      <g id="eye-front">
+        <ellipse cx="272" cy="96" rx="9" ry="11" fill="#ffffff"/>
+      </g>
+      <g id="pupils">
+        <circle cx="251" cy="95" r="4.4" fill="#14171C"/>
+        <circle cx="276" cy="97" r="5.2" fill="#14171C"/>
+        <circle cx="252.8" cy="92.6" r="1.4" fill="#ffffff"/>
+        <circle cx="278" cy="94.4" r="1.7" fill="#ffffff"/>
+      </g>
+      <ellipse id="lid-back" cx="248" cy="94" rx="8.5" ry="10.5" fill="#0055A4"/>
+      <ellipse id="lid-front" cx="272" cy="96" rx="10" ry="12" fill="#0055A4"/>
+      <path id="brows" d="M242,80 Q248,77 254,79 M266,81 Q273,78 280,81" fill="none" stroke="#003D78" stroke-width="2.4" stroke-linecap="round"/>
+    </g>
+  </g>
+</svg>
