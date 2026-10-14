@@ -99,6 +99,15 @@
         <div class="row2"><button class="btn" id="exportRaw">Save every measurement as CSV</button></div>
         <p class="note" id="csvNote"></p>
       </div>
+      <div class="panel" id="cleanPanel">
+        <div class="chart-head"><b>Raw data and clean data</b></div>
+        <p class="note">Switcheroo measures the network you are on every 30 seconds and the other one every 4 minutes, so the network you stay on has far more samples. Python cleans the data (types, duplicates, missing values, impossible values, outliers), then balances both networks with one median row per 5 minute window.</p>
+        <div class="row2"><button class="btn primary" id="runClean">Clean data and make graphs</button><button class="btn" id="openClean" hidden>Open folder</button></div>
+        <p class="note" id="cleanNote"></p>
+        <table class="avg" id="cleanTable" hidden><thead id="cleanHead"></thead><tbody id="cleanBody"></tbody></table>
+        <ol class="steps" id="cleanSteps"></ol>
+        <div class="graphs" id="cleanGraphs"></div>
+      </div>
     </div>
 
   </main>

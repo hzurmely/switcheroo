@@ -364,6 +364,61 @@ ipcMain.handle("data:csv", () => {
     return { ok: false, error: String(e.message || e) };
   }
 });
+// ---- Python analysis: cleans the data, fixes oversampling, makes graphs
+function runPy(args, timeout) {
+  return new Promise((resolve) => {
+    const tries = [["py", ["-3"]], ["python", []], ["python3", []]];
+    const next = (i) => {
+      if (i >= tries.length) return resolve({ missing: true });
+      const [cmd, pre] = tries[i];
+      require("child_process").execFile(cmd, [...pre, ...args], { timeout, maxBuffer: 32 << 20, windowsHide: true }, (err, out, errOut) => {
+        if (err && (err.code === "ENOENT" || /not recognized|was not found|Microsoft Store/i.test(String(errOut)))) return next(i + 1);
+        resolve({ err, out: String(out || ""), errOut: String(errOut || "") });
+      });
+    };
+    next(0);
+  });
+}
+const analysisDir = () => path.join(store.dir, "analysis");
+const GRAPHS = ["samples.png", "speed_time.png", "speed_box.png", "latency_hist.png", "speed_hour.png"];
+ipcMain.handle("analysis:run", async () => {
+  const h = currentHouse();
+  const dir = analysisDir();
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    const raw = path.join(dir, "raw.csv");
+    store.exportCsv(raw, (id) => (houses().find((x) => x.id === id) || {}).name || id);
+    const script = path.join(__dirname, "analyze.py").replace("app.asar" + path.sep, "app.asar.unpacked" + path.sep);
+    const chk = await runPy(["-c", "import pandas, numpy, matplotlib"], 30000);
+    if (chk.missing) return { ok: false, error: "Python was not found. Install Python 3 from python.org (tick Add to PATH), then try again." };
+    if (chk.err) return { ok: false, error: "Python needs three packages. Open Command Prompt and run: python -m pip install pandas numpy matplotlib" };
+    const r = await runPy([script, raw, dir, (h && h.a) || "", (h && h.name) || ""], 180000);
+    if (r.err) return { ok: false, error: (r.errOut || String(r.err.message)).split(/\r?\n/).filter(Boolean).slice(-2).join(" ") };
+    const out = JSON.parse(r.out.trim().split(/\r?\n/).pop());
+    out.dir = dir;
+    return out;
+  } catch (e) {
+    return { ok: false, error: String(e.message || e) };
+  }
+});
+ipcMain.handle("analysis:last", () => {
+  try {
+    const s = JSON.parse(fs.readFileSync(path.join(analysisDir(), "summary.json"), "utf8"));
+    s.dir = analysisDir();
+    return s;
+  } catch {
+    return null;
+  }
+});
+ipcMain.handle("analysis:image", (_e, name) => {
+  if (!GRAPHS.includes(name)) return null;
+  try {
+    return "data:image/png;base64," + fs.readFileSync(path.join(analysisDir(), name)).toString("base64");
+  } catch {
+    return null;
+  }
+});
+ipcMain.handle("analysis:open", () => shell.openPath(analysisDir()));
 ipcMain.handle("avg:csv", (_e, range, text) => {
   const safe = ["day", "week", "all"].includes(range) ? range : "all";
   const d = new Date();

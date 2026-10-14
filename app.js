@@ -282,6 +282,84 @@ async function renderAvg() {
     : "Pick two networks to see their averages.";
 }
 
+const CLEAN_ROWS = [
+  ["Samples", (v) => String(v.n)],
+  ["Average speed", (v) => (v.mbps === null ? "no data" : v.mbps.toFixed(1) + " Mbps")],
+  ["Best speed", (v) => (v.topMbps === null ? "no data" : v.topMbps.toFixed(1) + " Mbps")],
+  ["Worst speed", (v) => (v.lowMbps === null ? "no data" : v.lowMbps.toFixed(1) + " Mbps")],
+  ["Average latency", (v) => (v.latency === null ? "no data" : Math.round(v.latency) + " ms")],
+  ["Jitter", (v) => (v.jitter === null ? "no data" : v.jitter.toFixed(1) + " ms")],
+  ["Packet loss", (v) => (v.loss === null ? "no data" : v.loss.toFixed(1) + " %")],
+  ["Signal", (v) => (v.signal === null ? "no data" : Math.round(v.signal) + " %")],
+  ["Failed to join", (v) => String(v.fails)],
+];
+async function renderClean(r) {
+  if (!r) return;
+  if (!r.ok) {
+    $("cleanNote").textContent = r.error || "Something went wrong.";
+    return;
+  }
+  const nets = r.networks;
+  const head = $("cleanHead");
+  head.innerHTML = "";
+  const hr = document.createElement("tr");
+  for (const t of [""].concat(...nets.map((n) => [n + " raw", n + " clean"]))) {
+    const th = document.createElement("th");
+    th.textContent = t;
+    hr.appendChild(th);
+  }
+  head.appendChild(hr);
+  const body = $("cleanBody");
+  body.innerHTML = "";
+  for (const [label, fmt] of CLEAN_ROWS) {
+    const tr = document.createElement("tr");
+    const lab = document.createElement("td");
+    lab.textContent = label;
+    tr.appendChild(lab);
+    for (const n of nets) {
+      for (const kind of ["raw", "clean"]) {
+        const td = document.createElement("td");
+        td.textContent = fmt(r[kind][n]);
+        tr.appendChild(td);
+      }
+    }
+    body.appendChild(tr);
+  }
+  $("cleanTable").hidden = false;
+  const steps = $("cleanSteps");
+  steps.innerHTML = "";
+  for (const s of r.steps || []) {
+    const li = document.createElement("li");
+    const b = document.createElement("b");
+    b.textContent = s.step + ". ";
+    li.appendChild(b);
+    li.appendChild(document.createTextNode(s.text.replace(/^\d+\.\s*/, "")));
+    steps.appendChild(li);
+  }
+  const box = $("cleanGraphs");
+  box.innerHTML = "";
+  for (const g of r.graphs || []) {
+    const src = await window.api.analysisImage(g);
+    if (!src) continue;
+    const img = document.createElement("img");
+    img.src = src;
+    img.alt = g.replace(".png", "").replace(/_/g, " ");
+    box.appendChild(img);
+  }
+  $("openClean").hidden = false;
+  $("cleanNote").textContent = `${r.rawRows} raw rows became ${r.cleanRows} clean rows. Files are in ${r.dir}: clean-samples.csv (balanced), clean-rows.csv (cleaned, not balanced) and the graphs.`;
+}
+async function runClean() {
+  $("runClean").disabled = true;
+  $("cleanNote").textContent = "Cleaning with Python, this takes a few seconds...";
+  try {
+    await renderClean(await window.api.runAnalysis());
+  } catch (e) {
+    $("cleanNote").textContent = "Could not run: " + (e.message || e);
+  }
+  $("runClean").disabled = false;
+}
+
 let lastCsv = null;
 async function exportCsv() {
   const range = $("range").value;
@@ -466,6 +544,9 @@ async function init() {
   };
   $("autoUpdate").onchange = async (e) => ((S.prefs = await window.api.setPrefs({ autoUpdate: e.target.checked })), renderSettings());
   $("exportCsv").onclick = exportCsv;
+  $("runClean").onclick = runClean;
+  $("openClean").onclick = () => window.api.openAnalysis();
+  window.api.lastAnalysis().then((r) => r && r.ok && renderClean(r));
   $("exportRaw").onclick = async () => {
     $("csvNote").textContent = "Saving...";
     const r = await window.api.exportRaw();

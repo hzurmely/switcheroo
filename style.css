@@ -194,3 +194,9 @@ input:focus { box-shadow: 0 0 0 2px var(--blurple); }
 .gamecard.playing .gc-text span { color: var(--text); }
 .gamecard.off { opacity: .65; }
 @media (prefers-reduced-motion: reduce) { .gc-live i { animation: none; } }
+
+/* raw vs clean data */
+.steps { margin: 6px 0 0; padding-left: 20px; color: var(--muted); font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
+.steps b { color: var(--text); font-weight: 600; }
+.graphs { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 12px; margin-top: 8px; }
+.graphs img { width: 100%; height: auto; border-radius: 8px; display: block; background: var(--bg1); }
