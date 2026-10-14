@@ -460,6 +460,7 @@ app.whenReady().then(() => {
   app.setAppUserModelId("com.hzurmely.switcheroo");
   // Rewrite the startup entry so older installs also start hidden in the tray.
   if (autostartOn()) setAutostart(true);
+  games.init(app.getPath("userData")).catch(() => {});
   createWindow();
   tray = new Tray(nativeImage.createFromPath(path.join(ASSETS, "tray-off.png")));
   tray.on("click", showWindow);

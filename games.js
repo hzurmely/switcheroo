@@ -2,6 +2,82 @@
 // tasklist cuts long names at 25 characters ("VALORANT-Win64-Shipping.exe" became "VALORANT-Win64-Shipping.e"),
 // so the process list comes from PowerShell, which gives full names and install paths.
 const { execFile } = require("child_process");
+const https = require("https");
+const fs = require("fs");
+const path = require("path");
+
+// Discord's own list of detectable games: every game with the program names it looks for.
+// Downloaded once a week and cached, so new games work without updating Switcheroo.
+const DB_URL = "https://discord.com/api/v9/applications/detectable";
+let db = { byName: new Map(), count: 0 };
+
+function buildDb(list) {
+  const byName = new Map();
+  let count = 0;
+  for (const g of Array.isArray(list) ? list : []) {
+    let used = false;
+    for (const e of g.executables || []) {
+      if (e.os !== "win32" || e.is_launcher || !e.name) continue;
+      const full = String(e.name).toLowerCase().replace(/\\/g, "/");
+      const base = full.split("/").pop().replace(/\.exe$/, "");
+      if (!base) continue;
+      if (!byName.has(base)) byName.set(base, []);
+      byName.get(base).push({ game: g.name, suffix: full.includes("/") ? full : "" });
+      used = true;
+    }
+    if (used) count++;
+  }
+  return { byName, count };
+}
+
+function setDb(list) {
+  db = buildDb(list);
+  return db.count;
+}
+
+function fetchJson(url) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, { timeout: 20000, headers: { "User-Agent": "Switcheroo" } }, (res) => {
+      if (res.statusCode !== 200) { res.resume(); return reject(new Error("HTTP " + res.statusCode)); }
+      const chunks = [];
+      res.on("data", (c) => chunks.push(c));
+      res.on("end", () => { try { resolve(JSON.parse(Buffer.concat(chunks).toString("utf8"))); } catch (e) { reject(e); } });
+    });
+    req.on("timeout", () => req.destroy(new Error("timeout")));
+    req.on("error", reject);
+  });
+}
+
+// Loads the cached copy right away, then refreshes it when it is older than a week.
+async function init(dir) {
+  const file = path.join(dir, "discord-games.json");
+  let age = Infinity;
+  try {
+    setDb(JSON.parse(fs.readFileSync(file, "utf8")));
+    age = Date.now() - fs.statSync(file).mtimeMs;
+  } catch {}
+  if (age < 7 * 86400000) return db.count;
+  try {
+    const list = await fetchJson(DB_URL);
+    if (Array.isArray(list) && list.length > 100) {
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(file, JSON.stringify(list.map((g) => ({ name: g.name, executables: g.executables }))));
+      setDb(list);
+    }
+  } catch {}
+  return db.count;
+}
+
+function discordMatch(name, procPath) {
+  const hits = db.byName.get(name);
+  if (!hits) return null;
+  const p = String(procPath || "").toLowerCase().replace(/\\/g, "/");
+  for (const h of hits) {
+    if (!h.suffix) return h.game;
+    if (p && p.endsWith("/" + h.suffix)) return h.game;
+  }
+  return null;
+}
 
 // Program names without ".exe", lower case.
 const KNOWN = [
@@ -69,6 +145,8 @@ function matchGame(procs, extra = []) {
   for (const p of procs) {
     const name = norm(typeof p === "string" ? p : p.name);
     const path = typeof p === "string" ? "" : p.path || "";
+    const viaDiscord = discordMatch(name, path);
+    if (viaDiscord) return viaDiscord;
     if (list.has(name)) return name;
     if (path && !NOT_GAMES.test(name) && GAME_PATHS.some((re) => re.test(path))) return name;
   }
@@ -88,7 +166,7 @@ async function scan(extra) {
     .sort((a, b) => b.mb - a.mb)
     .slice(0, 8)
     .map((p) => ({ name: p.name, mb: p.mb }));
-  return { count: procs.length, found: matchGame(procs, extra), top, error };
+  return { count: procs.length, found: matchGame(procs, extra), top, error, db: db.count };
 }
 
-module.exports = { detect, scan, matchGame, KNOWN };
+module.exports = { detect, scan, matchGame, KNOWN, init, setDb, dbSize: () => db.count };
