@@ -21,6 +21,7 @@ function gameRank(a) {
 }
 
 const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+const linkOf = (c) => ({ rx: c.rx ?? null, tx: c.tx ?? null, channel: c.channel ?? null, radio: c.radio ?? null, band: c.band ?? null });
 const same = (a, b) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
 
 class Engine extends EventEmitter {
@@ -101,6 +102,7 @@ class Engine extends EventEmitter {
       await this.wait(1000);
     }
     this.why = sawIt ? "joined but no internet" : "Windows would not join it";
+    this.emit("joinfail", { net: profile, why: this.why, ts: Date.now() });
     return false;
   }
 
@@ -162,7 +164,7 @@ class Engine extends EventEmitter {
         }
         const gm = await this.sys.ping();
         if (this.stopped) break;
-        this.emit("status", { net: active, m: gm, signal: c.signal, ts: Date.now(), mode: "game" });
+        this.emit("status", { net: active, m: gm, signal: c.signal, link: linkOf(c), ts: Date.now(), mode: "game" });
         await this.wait(this.o.gameInterval);
         continue;
       }
@@ -171,7 +173,7 @@ class Engine extends EventEmitter {
       if (this.stopped) break;
       const prev = mean(this.history[active]);
       this.push(active, m.score);
-      this.emit("status", { net: active, m, signal: c.signal, ts: Date.now(), mode: "normal" });
+      this.emit("status", { net: active, m, signal: c.signal, link: linkOf(c), ts: Date.now(), mode: "normal" });
 
       const degraded = prev > 0 && m.score < prev * this.o.degradeRatio;
       const since = Date.now() - lastTrial;
@@ -236,7 +238,7 @@ class Engine extends EventEmitter {
     const m = await this.sys.measure();
     const c = await this.sys.current();
     this.push(alt, m.score);
-    this.emit("status", { net: alt, m, signal: c.signal, ts: Date.now(), mode: "normal" });
+    this.emit("status", { net: alt, m, signal: c.signal, link: linkOf(c), ts: Date.now(), mode: "normal" });
 
     const recent = this.history[active].slice(-2);
     const reference = recent.length ? mean(recent) : current.score;

@@ -31,21 +31,29 @@ async function profiles() {
   return names;
 }
 
+// Reads the Wi-Fi adapter. Labels are localized by Windows, so values are recognised by shape:
+// the first percentage is the signal, the two "(Mbps)" lines are receive and transmit rates.
 async function current() {
-  let ssid = null;
-  let signal = null;
+  const r = { ssid: null, signal: null, channel: null, radio: null, band: null, rx: null, tx: null };
+  const rates = [];
   for (const line of (await show("interfaces")).split(/\r?\n/)) {
     const i = line.indexOf(":");
     if (i < 0) continue;
     const key = line.slice(0, i).trim();
     const val = line.slice(i + 1).trim();
-    if (key === "SSID") ssid = val;
-    else if (signal === null) {
+    if (key === "SSID") r.ssid = val;
+    else if (/mbps/i.test(key) && /^\d+(\.\d+)?$/.test(val)) rates.push(Number(val));
+    else if (/^(channel|canal|kanal|canale)\b/i.test(key) && /^\d+$/.test(val)) r.channel = Number(val);
+    else if (/radio|r\u00e1dio/i.test(key) && val) r.radio = val;
+    else if (/^(band|banda|bande)\b/i.test(key) && val) r.band = val;
+    else if (r.signal === null) {
       const m = /^(\d+)%$/.exec(val);
-      if (m) signal = Number(m[1]);
+      if (m) r.signal = Number(m[1]);
     }
   }
-  return { ssid, signal };
+  if (rates.length) r.rx = rates[0];
+  if (rates.length > 1) r.tx = rates[1];
+  return r;
 }
 
 async function connect(profile) {
@@ -101,13 +109,24 @@ function download(url, maxMs = 3000) {
   });
 }
 
+// Average change between neighbouring pings: how steady the connection feels.
+function jitter(seq) {
+  const v = seq.filter((x) => x !== null);
+  if (v.length < 2) return null;
+  let d = 0;
+  for (let i = 1; i < v.length; i++) d += Math.abs(v[i] - v[i - 1]);
+  return d / (v.length - 1);
+}
+
 async function measure() {
+  const seq = [];
   const times = [];
   let lost = 0;
   const samples = 6;
   for (let i = 0; i < samples; i++) {
     const [h, p] = HOSTS[i % HOSTS.length];
     const t = await tcpPing(h, p);
+    seq.push(t);
     if (t === null) lost++;
     else times.push(t);
   }
@@ -116,22 +135,31 @@ async function measure() {
   const loss = lost / samples;
   const mbps = times.length ? await download(SPEED_URL) : 0;
   const score = latency === null || mbps <= 0 ? 0 : (mbps * (1 - loss)) / (1 + latency / 150);
-  return { latency, loss, mbps, score };
+  return { latency, loss, mbps, score, jitter: jitter(seq), maxLatency: times.length ? times[times.length - 1] : null };
 }
 
 // Latency and loss only, no download. Used while gaming so tests never add lag.
 async function ping() {
+  const seq = [];
   const times = [];
   let lost = 0;
   const samples = 5;
   for (let i = 0; i < samples; i++) {
     const [h, p] = HOSTS[i % HOSTS.length];
     const t = await tcpPing(h, p);
+    seq.push(t);
     if (t === null) lost++;
     else times.push(t);
   }
   times.sort((a, b) => a - b);
-  return { latency: times.length ? times[Math.floor(times.length / 2)] : null, loss: lost / samples, mbps: null, score: null };
+  return {
+    latency: times.length ? times[Math.floor(times.length / 2)] : null,
+    loss: lost / samples,
+    mbps: null,
+    score: null,
+    jitter: jitter(seq),
+    maxLatency: times.length ? times[times.length - 1] : null,
+  };
 }
 
 module.exports = { profiles, current, connect, rescan, internetOk, measure, ping };

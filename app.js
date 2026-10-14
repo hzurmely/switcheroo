@@ -88,6 +88,11 @@ function render() {
   $("stLat").textContent = live && live.m.latency !== null ? Math.round(live.m.latency) : "--";
   $("stLoss").textContent = live ? Math.round(live.m.loss * 100) : "--";
   $("stSig").textContent = live && live.signal !== null ? live.signal : "--";
+  $("stJit").textContent = live && live.m.jitter != null ? live.m.jitter.toFixed(1) : "--";
+  const lk = (live && live.link) || {};
+  $("stLink").textContent = lk.rx != null ? Math.round(lk.rx) : "--";
+  $("stCh").textContent = lk.channel != null ? lk.channel : "--";
+  $("stRadio").textContent = lk.radio || "";
 
   const btn = $("toggle");
   btn.textContent = S.running ? "Stop switching" : "Start switching";
@@ -202,29 +207,58 @@ async function loadAvg() {
   render();
 }
 
+const AVG_ROWS = [
+  { label: "Samples", get: (v) => v.n, fmt: (x) => String(x) },
+  { label: "Average speed", get: (v) => v.mbps, fmt: (x) => x.toFixed(1) + " Mbps", best: "high" },
+  { label: "Best speed", get: (v) => v.topMbps, fmt: (x) => x.toFixed(1) + " Mbps", best: "high" },
+  { label: "Worst speed", get: (v) => v.lowMbps, fmt: (x) => x.toFixed(1) + " Mbps", best: "high" },
+  { label: "Average latency", get: (v) => v.latency, fmt: (x) => Math.round(x) + " ms", best: "low" },
+  { label: "Slowest ping", get: (v) => v.peakLat, fmt: (x) => Math.round(x) + " ms", best: "low" },
+  { label: "Jitter", get: (v) => v.jitter, fmt: (x) => x.toFixed(1) + " ms", best: "low" },
+  { label: "Packet loss", get: (v) => v.loss, fmt: (x) => (x * 100).toFixed(1) + " %", best: "low" },
+  { label: "Signal", get: (v) => v.signal, fmt: (x) => Math.round(x) + " %", best: "high" },
+  { label: "Link speed", get: (v) => v.linkRate, fmt: (x) => Math.round(x) + " Mbps", best: "high" },
+  { label: "Seen on 5 GHz", get: (v) => v.band5, fmt: (x) => Math.round(x * 100) + " %" },
+  { label: "Failed to join", get: (v) => v.fails, fmt: (x) => String(x), best: "low" },
+  { label: "Game rank", get: (v) => gameRank(v), fmt: (x) => x.toFixed(1), best: "high" },
+];
+
 async function renderAvg() {
   const range = $("range").value;
   const data = range === "all" ? S.avg : (await window.api.averages(range)) || {};
-  const rows = [S.a, S.b].filter(Boolean).map((n) => ({ n, v: data[n] }));
-  const ranks = rows.map((r) => (r.v ? gameRank(r.v) : 0));
-  const bestSpeed = Math.max(...rows.map((r) => (r.v && r.v.mbps) || 0));
-  const bestLat = Math.min(...rows.map((r) => (r.v && r.v.latency !== null ? r.v.latency : Infinity)));
+  const nets = [S.a, S.b].filter(Boolean);
+  const head = $("avgHead");
+  head.innerHTML = "";
+  const hr = document.createElement("tr");
+  for (const t of ["", ...nets]) {
+    const th = document.createElement("th");
+    th.textContent = t;
+    hr.appendChild(th);
+  }
+  head.appendChild(hr);
   const body = $("avgBody");
   body.innerHTML = "";
-  rows.forEach((r, i) => {
+  for (const row of AVG_ROWS) {
+    const vals = nets.map((n) => {
+      const v = data[n];
+      const x = v ? row.get(v) : null;
+      return x === null || x === undefined || Number.isNaN(x) ? null : x;
+    });
+    const real = vals.filter((x) => x !== null);
+    const target = row.best && real.length > 1 ? (row.best === "high" ? Math.max(...real) : Math.min(...real)) : null;
     const tr = document.createElement("tr");
-    const cells = r.v
-      ? [r.n, String(r.v.n), r.v.mbps === null ? "n/a" : r.v.mbps.toFixed(1) + " Mbps", r.v.latency === null ? "n/a" : Math.round(r.v.latency) + " ms", (r.v.loss * 100).toFixed(1) + " %", ranks[i].toFixed(1)]
-      : [r.n, "0", "no data", "no data", "no data", "no data"];
-    cells.forEach((t, k) => {
+    const lab = document.createElement("td");
+    lab.textContent = row.label;
+    tr.appendChild(lab);
+    vals.forEach((x) => {
       const td = document.createElement("td");
-      td.textContent = t;
-      if (r.v && ((k === 2 && r.v.mbps === bestSpeed && rows.length > 1) || (k === 3 && r.v.latency === bestLat && rows.length > 1) || (k === 5 && ranks[i] === Math.max(...ranks) && rows.length > 1))) td.className = "best";
+      td.textContent = x === null ? "no data" : row.fmt(x);
+      if (target !== null && x === target && real.some((y) => y !== target)) td.className = "best";
       tr.appendChild(td);
     });
     body.appendChild(tr);
-  });
-  $("avgNote").textContent = rows.length
+  }
+  $("avgNote").textContent = nets.length
     ? "Green marks the better network. Game rank favours low latency and no packet loss, and is what game mode uses."
     : "Pick two networks to see their averages.";
 }
@@ -243,6 +277,7 @@ function renderSettings() {
 
 function setTab(t) {
   document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("on", b.dataset.tab === t));
+  $("openSettings").classList.toggle("on", t === "set");
   for (const id of ["live", "avg", "set"]) $("pane-" + id).hidden = id !== t;
   if (t === "live") drawChart();
   if (t === "avg") renderAvg();
@@ -315,6 +350,7 @@ async function init() {
     e.target.checked = await window.api.setAutostart(e.target.checked);
   };
   document.querySelectorAll(".tab").forEach((b) => (b.onclick = () => setTab(b.dataset.tab)));
+  $("openSettings").onclick = () => setTab("set");
   $("range").onchange = renderAvg;
   $("gameOn").onchange = async (e) => ((S.prefs = await window.api.setPrefs({ game: e.target.checked })), renderSettings());
   $("extraGames").onchange = async (e) => {

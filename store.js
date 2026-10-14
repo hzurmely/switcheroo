@@ -7,22 +7,54 @@ const path = require("path");
 const DAY = 86400000;
 const FILE_RE = /^samples-(\d{4}-\d{2}-\d{2})\.jsonl$/;
 
-const fresh = () => ({ n: 0, mbps: 0, mN: 0, lat: 0, latN: 0, loss: 0, score: 0, sN: 0 });
+const SUMS = ["n", "mbps", "mN", "lat", "latN", "loss", "score", "sN", "jit", "jitN", "sig", "sigN", "rate", "rateN", "maxLat", "fails", "ch5", "ch24"];
+const fresh = () => ({ ...Object.fromEntries(SUMS.map((k) => [k, 0])), topMbps: null, lowMbps: null, peakLat: null });
+const has = (x) => x !== null && x !== undefined;
 function accumulate(b, r) {
+  if (r.ev === "joinfail") {
+    b.fails++;
+    return;
+  }
   b.n++;
   b.loss += r.p;
-  if (r.m !== null && r.m !== undefined) {
+  if (has(r.m)) {
     b.mbps += r.m;
     b.mN++;
+    if (r.m > 0) {
+      b.topMbps = b.topMbps === null ? r.m : Math.max(b.topMbps, r.m);
+      b.lowMbps = b.lowMbps === null ? r.m : Math.min(b.lowMbps, r.m);
+    }
   }
-  if (r.s !== null && r.s !== undefined) {
+  if (has(r.s)) {
     b.score += r.s;
     b.sN++;
   }
-  if (r.l !== null && r.l !== undefined) {
+  if (has(r.l)) {
     b.lat += r.l;
     b.latN++;
   }
+  if (has(r.x)) b.peakLat = b.peakLat === null ? r.x : Math.max(b.peakLat, r.x);
+  if (has(r.j)) {
+    b.jit += r.j;
+    b.jitN++;
+  }
+  if (has(r.g)) {
+    b.sig += r.g;
+    b.sigN++;
+  }
+  const rate = has(r.rx) ? r.rx : null;
+  if (rate !== null) {
+    b.rate += rate;
+    b.rateN++;
+  }
+  if (has(r.c)) r.c > 14 ? b.ch5++ : b.ch24++;
+}
+// Folds the totals of one pruned group into the running summary.
+function merge(into, v) {
+  for (const k of SUMS) into[k] += v[k] || 0;
+  if (has(v.topMbps)) into.topMbps = into.topMbps === null ? v.topMbps : Math.max(into.topMbps, v.topMbps);
+  if (has(v.lowMbps)) into.lowMbps = into.lowMbps === null ? v.lowMbps : Math.min(into.lowMbps, v.lowMbps);
+  if (has(v.peakLat)) into.peakLat = into.peakLat === null ? v.peakLat : Math.max(into.peakLat, v.peakLat);
 }
 
 const dayKey = (ts) => new Date(ts).toISOString().slice(0, 10);
@@ -83,11 +115,24 @@ class Store {
       p: Math.round(s.loss * 1000) / 1000,
       s: s.score === null || s.score === undefined ? null : Math.round(s.score * 100) / 100,
       g: s.signal ?? null,
+      j: has(s.jitter) ? Math.round(s.jitter * 10) / 10 : null,
+      x: has(s.maxLatency) ? Math.round(s.maxLatency * 10) / 10 : null,
+      rx: s.link && has(s.link.rx) ? s.link.rx : null,
+      tx: s.link && has(s.link.tx) ? s.link.tx : null,
+      c: s.link && has(s.link.channel) ? s.link.channel : null,
+      rd: s.link && s.link.radio ? s.link.radio : null,
     };
     try {
       fs.appendFileSync(path.join(this.dir, `samples-${dayKey(row.t)}.jsonl`), JSON.stringify(row) + "\n");
     } catch {}
     if (++this.writes % 40 === 0) this.prune();
+  }
+
+  // A failed attempt to join a network. Kept in the same daily file so pruning handles it too.
+  event(ev) {
+    try {
+      fs.appendFileSync(path.join(this.dir, `samples-${dayKey(ev.ts)}.jsonl`), JSON.stringify({ t: ev.ts, h: ev.house, n: ev.net, ev: ev.type }) + "\n");
+    } catch {}
   }
 
   readFile(f) {
@@ -124,7 +169,7 @@ class Store {
         const [h, ...rest] = key.split("|");
         if (h !== house) continue;
         const b = bucket(rest.join("|"));
-        for (const k of Object.keys(b)) b[k] += v[k] || 0;
+        merge(b, v);
       }
     }
     for (const f of this.files()) {
@@ -136,13 +181,21 @@ class Store {
     }
     const out = {};
     for (const [n, b] of Object.entries(acc)) {
-      if (!b.n) continue;
+      if (!b.n && !b.fails) continue;
       out[n] = {
         n: b.n,
         mbps: b.mN ? b.mbps / b.mN : null,
         latency: b.latN ? b.lat / b.latN : null,
-        loss: b.loss / b.n,
+        loss: b.n ? b.loss / b.n : 0,
         score: b.sN ? b.score / b.sN : null,
+        jitter: b.jitN ? b.jit / b.jitN : null,
+        signal: b.sigN ? b.sig / b.sigN : null,
+        linkRate: b.rateN ? b.rate / b.rateN : null,
+        topMbps: b.topMbps,
+        lowMbps: b.lowMbps,
+        peakLat: b.peakLat,
+        fails: b.fails,
+        band5: b.ch5 + b.ch24 ? b.ch5 / (b.ch5 + b.ch24) : null,
       };
     }
     return out;

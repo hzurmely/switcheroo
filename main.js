@@ -106,9 +106,12 @@ function startEngine() {
     cache.status[s.net] = s;
     cache.series.push({ net: s.net, score: s.m.score, ts: s.ts });
     if (cache.series.length > 120) cache.series.shift();
-    if (store) store.add({ ...s.m, ts: s.ts, house: house.id, net: s.net, mode: s.mode, signal: s.signal });
+    if (store) store.add({ ...s.m, ts: s.ts, house: house.id, net: s.net, mode: s.mode, signal: s.signal, link: s.link });
     send("status", s);
     updateTray();
+  });
+  engine.on("joinfail", (f) => {
+    if (store) store.event({ ts: f.ts, house: house.id, net: f.net, type: "joinfail" });
   });
   engine.on("game", (g) => {
     cache.game = g;

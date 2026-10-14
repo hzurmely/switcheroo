@@ -16,6 +16,7 @@
     <div class="rail-sep"></div>
     <div class="rail-houses" id="railHouses"></div>
     <button class="rail-net add" id="addHouse" title="Add a household">+</button>
+    <button class="rail-net gear" id="openSettings" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3h0a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9v0a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   </nav>
 
   <aside class="side">
@@ -64,6 +65,9 @@
         <div class="card"><small>Latency</small><b id="stLat">--</b><em>ms</em></div>
         <div class="card"><small>Packet loss</small><b id="stLoss">--</b><em>%</em></div>
         <div class="card"><small>Signal</small><b id="stSig">--</b><em>%</em></div>
+        <div class="card"><small>Jitter</small><b id="stJit">--</b><em>ms</em></div>
+        <div class="card"><small>Link speed</small><b id="stLink">--</b><em>Mbps</em></div>
+        <div class="card"><small>Channel</small><b id="stCh">--</b><em id="stRadio"></em></div>
       </section>
       <section class="chart-card">
         <div class="chart-head"><b>Quality score</b>
@@ -79,11 +83,11 @@
 
     <div class="pane scroll" id="pane-avg" hidden>
       <div class="panel">
-        <div class="chart-head"><b>Average speed and latency</b>
+        <div class="chart-head"><b>Network averages</b>
           <select id="range"><option value="day">Last 24 hours</option><option value="week">Last 7 days</option><option value="all" selected>Everything saved</option></select>
         </div>
         <table class="avg">
-          <thead><tr><th>Network</th><th>Samples</th><th>Avg speed</th><th>Avg latency</th><th>Avg loss</th><th>Game rank</th></tr></thead>
+          <thead id="avgHead"></thead>
           <tbody id="avgBody"></tbody>
         </table>
         <p class="note" id="avgNote"></p>
@@ -97,6 +101,10 @@
           <span class="switch"><input type="checkbox" id="gameOn"><i></i></span></label>
         <label class="field wide">Extra game programs (exe names, comma separated)<input id="extraGames" placeholder="mygame.exe, other.exe"></label>
         <p class="note">Common games are detected automatically. Game mode only pings, so it adds no lag, and it never switches in the middle of a match.</p>
+      </div>
+      <div class="panel">
+        <b>What is measured</b>
+        <p class="note">Every check saves: download speed, latency, the slowest ping, jitter (how steady the pings are), packet loss, signal strength, link speed, channel, radio type, and every time Windows failed to join a network. Nothing leaves this PC.</p>
       </div>
       <div class="panel">
         <b>Saved data</b>
