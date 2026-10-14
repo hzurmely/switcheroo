@@ -265,6 +265,8 @@ async function renderAvg() {
 
 function renderSettings() {
   $("gameOn").checked = !!S.prefs.game;
+  $("autoDetect").checked = S.prefs.autoDetect !== false;
+  $("autostart2").checked = $("autostart").checked;
   if (document.activeElement !== $("extraGames")) $("extraGames").value = (S.prefs.extraGames || []).join(", ");
   $("maxMb").value = String(S.prefs.maxMb);
   const st = S.storage;
@@ -288,6 +290,7 @@ function renderUpdate(u) {
     error: cur + ". " + u.message,
   }[u.state];
   $("updText").textContent = text || cur;
+  $("verText").textContent = cur;
   $("updBarWrap").hidden = u.state !== "downloading";
   $("updBar").style.width = (u.percent || 0) + "%";
   $("updInstall").hidden = u.state !== "ready";
@@ -296,11 +299,25 @@ function renderUpdate(u) {
 
 function setTab(t) {
   document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("on", b.dataset.tab === t));
-  $("openSettings").classList.toggle("on", t === "set");
-  for (const id of ["live", "avg", "set"]) $("pane-" + id).hidden = id !== t;
+  for (const id of ["live", "avg"]) $("pane-" + id).hidden = id !== t;
   if (t === "live") drawChart();
   if (t === "avg") renderAvg();
-  if (t === "set") window.api.storage().then((s) => ((S.storage = s), renderSettings()));
+}
+
+function openModal(sec) {
+  $("modal").hidden = false;
+  $("openSettings").classList.add("on");
+  showSection(sec || "general");
+  window.api.storage().then((s) => ((S.storage = s), renderSettings()));
+  renderSettings();
+}
+function closeModal() {
+  $("modal").hidden = true;
+  $("openSettings").classList.remove("on");
+}
+function showSection(sec) {
+  document.querySelectorAll(".mnav").forEach((b) => b.classList.toggle("on", b.dataset.sec === sec));
+  document.querySelectorAll(".sec").forEach((s) => (s.hidden = s.id !== "sec-" + sec));
 }
 
 function applyState(st) {
@@ -369,7 +386,22 @@ async function init() {
     e.target.checked = await window.api.setAutostart(e.target.checked);
   };
   document.querySelectorAll(".tab").forEach((b) => (b.onclick = () => setTab(b.dataset.tab)));
-  $("openSettings").onclick = () => setTab("set");
+  $("openSettings").onclick = () => ($("modal").hidden ? openModal() : closeModal());
+  $("modalX").onclick = closeModal;
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !$("modal").hidden) closeModal();
+  });
+  document.querySelectorAll(".mnav").forEach((b) => (b.onclick = () => showSection(b.dataset.sec)));
+  $("autoDetect").onchange = async (e) => ((S.prefs = await window.api.setPrefs({ autoDetect: e.target.checked })), renderSettings());
+  $("detectNow").onclick = async () => {
+    $("detectNote").textContent = "Looking...";
+    const r = await window.api.detectHouse();
+    $("detectNote").textContent = r.ok ? `Added ${r.name}: ${r.a} and ${r.b}.` : r.message;
+  };
+  $("autostart2").onchange = async (e) => {
+    e.target.checked = await window.api.setAutostart(e.target.checked);
+    $("autostart").checked = e.target.checked;
+  };
   $("updCheck").onclick = () => window.api.checkUpdate();
   $("updInstall").onclick = () => window.api.installUpdate();
   window.api.updateState().then(renderUpdate);
@@ -428,7 +460,7 @@ async function init() {
       loadAvg();
     }
   });
-  window.api.on("autostart", (v) => ($("autostart").checked = v));
+  window.api.on("autostart", (v) => (($("autostart").checked = v), ($("autostart2").checked = v)));
 }
 
 init();

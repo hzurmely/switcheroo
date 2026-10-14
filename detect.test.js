@@ -1,0 +1,13 @@
+const assert = require("assert");
+const { detectPair } = require("./detect");
+const P = ["APTO_301", "APTO_301_5G", "Casa-2.4GHz", "Casa-5GHz", "Cafe", "Hotel", "Vizinho_5G"];
+let r = detectPair("APTO_301", P);
+assert.deepStrictEqual(r, { name: "APTO_301", a: "APTO_301_5G", b: "APTO_301" });
+r = detectPair("APTO_301_5G", P);
+assert.deepStrictEqual(r, { name: "APTO_301", a: "APTO_301_5G", b: "APTO_301" });
+r = detectPair("Casa-2.4GHz", P);
+assert.deepStrictEqual(r, { name: "Casa", a: "Casa-5GHz", b: "Casa-2.4GHz" });
+assert.strictEqual(detectPair("Cafe", P), null);
+assert.strictEqual(detectPair("Vizinho_5G", P), null);
+assert.strictEqual(detectPair(null, P), null);
+console.log("detect ok");

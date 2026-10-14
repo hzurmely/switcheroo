@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld("api", {
   openData: () => ipcRenderer.invoke("data:open"),
   chooseData: () => ipcRenderer.invoke("data:choose"),
   stop: () => ipcRenderer.invoke("stop"),
+  detectHouse: () => ipcRenderer.invoke("house:detect"),
   updateState: () => ipcRenderer.invoke("update:state"),
   checkUpdate: () => ipcRenderer.invoke("update:check"),
   installUpdate: () => ipcRenderer.invoke("update:install"),

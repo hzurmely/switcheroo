@@ -6,6 +6,7 @@ const sys = require("./netwin");
 const { Store } = require("./store");
 const games = require("./games");
 const updater = require("./updater");
+const { detectPair } = require("./detect");
 let updateVersion = null;
 
 const ASSETS = __dirname;
@@ -253,7 +254,7 @@ function fullState() {
     series: cache.series,
     logs: cache.logs,
     game: cache.game,
-    prefs: { game: st.game !== false, extraGames: st.extraGames || [], maxMb: st.maxMb || 50 },
+    prefs: { game: st.game !== false, extraGames: st.extraGames || [], maxMb: st.maxMb || 50, autoDetect: st.autoDetect !== false },
     storage: storageInfo(),
   };
 }
@@ -317,6 +318,7 @@ ipcMain.handle("autostart", (_e, on) => {
 ipcMain.handle("prefs:set", (_e, p) => {
   const patch = {};
   if (typeof p.game === "boolean") patch.game = p.game;
+  if (typeof p.autoDetect === "boolean") patch.autoDetect = p.autoDetect;
   if (Array.isArray(p.extraGames)) patch.extraGames = p.extraGames.map(String).slice(0, 50);
   if (Number(p.maxMb) >= 5) {
     patch.maxMb = Math.min(5000, Math.floor(Number(p.maxMb)));
@@ -348,26 +350,58 @@ async function watchGames() {
   if (engine) engine.setGame(found);
 }
 
-// If the PC joins a network that belongs to another household, follow it.
-async function watchLocation() {
-  const list = houses();
-  if (list.length < 2) return;
-  const c = await sys.current();
-  if (!c.ssid) return;
-  const cur = currentHouse();
-  if (cur && (sameName(cur.a, c.ssid) || sameName(cur.b, c.ssid))) return;
-  const match = list.find((h) => sameName(h.a, c.ssid) || sameName(h.b, c.ssid));
-  if (!match) return;
+function goToHouse(id, text) {
   const was = !!engine;
   if (was) stopEngine();
-  saveSettings({ house: match.id });
+  saveSettings({ house: id });
   cache.status = {};
   cache.series = [];
   cache.active = null;
   if (was) startEngine();
-  send("houses", { houses: list, house: match.id });
-  send("log", { ts: Date.now(), text: `Arrived at ${match.name}, switched household` });
+  send("houses", { houses: houses(), house: id });
+  if (text) {
+    const e = { ts: Date.now(), text };
+    cache.logs.push(e);
+    send("log", e);
+  }
 }
+
+// Builds a household from the connected network and its partner, when the names make it obvious.
+async function autoCreateHouse(ssid, manual) {
+  const list = houses();
+  const owner = list.find((h) => sameName(h.a, ssid) || sameName(h.b, ssid));
+  if (owner) return { ok: false, message: `${ssid} already belongs to ${owner.name}.` };
+  const pair = detectPair(ssid, await sys.profiles());
+  if (!pair) {
+    return { ok: false, message: `No partner network found for ${ssid}. Name both networks alike, like Home and Home_5G.` };
+  }
+  let name = pair.name;
+  let n = 2;
+  while (list.some((h) => sameName(h.name, name))) name = `${pair.name.slice(0, 20)} ${n++}`;
+  const house = { id: "h" + Date.now().toString(36), name, a: pair.a, b: pair.b };
+  saveSettings({ houses: [...list, house] });
+  goToHouse(house.id, `New household found: ${name} (${pair.a} and ${pair.b})`);
+  return { ok: true, name, a: pair.a, b: pair.b, manual: !!manual };
+}
+
+// If the PC joins a network that belongs to another household, follow it.
+// If it joins a network that belongs to none, try to build a household from it.
+async function watchLocation() {
+  const c = await sys.current();
+  if (!c.ssid) return;
+  const list = houses();
+  const cur = currentHouse();
+  if (cur && (sameName(cur.a, c.ssid) || sameName(cur.b, c.ssid))) return;
+  const match = list.find((h) => sameName(h.a, c.ssid) || sameName(h.b, c.ssid));
+  if (match) return goToHouse(match.id, `Arrived at ${match.name}, switched household`);
+  if (loadSettings().autoDetect !== false) await autoCreateHouse(c.ssid, false);
+}
+
+ipcMain.handle("house:detect", async () => {
+  const c = await sys.current();
+  if (!c.ssid) return { ok: false, message: "Connect to a Wi-Fi network first." };
+  return autoCreateHouse(c.ssid, true);
+});
 
 // ---------------------------------------------------------------- lifecycle
 

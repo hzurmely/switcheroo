@@ -55,7 +55,6 @@
     <nav class="tabs">
       <button class="tab on" data-tab="live">Live</button>
       <button class="tab" data-tab="avg">Averages</button>
-      <button class="tab" data-tab="set">Settings</button>
       <span class="game-pill" id="gamePill" hidden>GAME MODE</span>
     </nav>
 
@@ -94,38 +93,79 @@
       </div>
     </div>
 
-    <div class="pane scroll" id="pane-set" hidden>
-      <div class="panel">
-        <b>Updates</b>
-        <p class="note" id="updText">Version</p>
-        <div class="bar" id="updBarWrap" hidden><i id="updBar"></i></div>
-        <div class="row2"><button class="btn" id="updCheck">Check for updates</button><button class="btn primary" id="updInstall" hidden>Restart to update</button></div>
-        <p class="note">Switcheroo also checks by itself every few hours and installs a downloaded update the next time you quit.</p>
-      </div>
-      <div class="panel">
-        <b>Game mode</b>
-        <label class="row"><span>Switch to the network with better averages when a game opens</span>
-          <span class="switch"><input type="checkbox" id="gameOn"><i></i></span></label>
-        <label class="field wide">Extra game programs (exe names, comma separated)<input id="extraGames" placeholder="mygame.exe, other.exe"></label>
-        <p class="note">Common games are detected automatically. Game mode only pings, so it adds no lag, and it never switches in the middle of a match.</p>
-      </div>
-      <div class="panel">
-        <b>What is measured</b>
-        <p class="note">Every check saves: download speed, latency, the slowest ping, jitter (how steady the pings are), packet loss, signal strength, link speed, channel, radio type, and every time Windows failed to join a network. Nothing leaves this PC.</p>
-      </div>
-      <div class="panel">
-        <b>Saved data</b>
-        <p class="path" id="dataPath"></p>
-        <div class="bar"><i id="dataBar"></i></div>
-        <p class="note" id="dataText"></p>
-        <label class="field wide">Size limit
-          <select id="maxMb"><option value="25">25 MB</option><option value="50">50 MB</option><option value="100">100 MB</option><option value="250">250 MB</option><option value="500">500 MB</option><option value="1000">1 GB</option></select>
-        </label>
-        <div class="row2"><button class="btn" id="openData">Open folder</button><button class="btn" id="chooseData">Change folder</button></div>
-        <p class="note">When the folder passes the limit, the oldest days are deleted until it is back under 80 percent. Their totals are kept, so lifetime averages stay correct.</p>
-      </div>
-    </div>
   </main>
+</div>
+
+<div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-label="Settings">
+  <div class="modal-nav">
+    <div class="modal-nav-in">
+      <div class="group">Settings</div>
+      <button class="mnav on" data-sec="general">General</button>
+      <button class="mnav" data-sec="houses">Households</button>
+      <button class="mnav" data-sec="game">Game mode</button>
+      <button class="mnav" data-sec="data">Saved data</button>
+      <div class="rail-sep wide"></div>
+      <small class="ver" id="verText"></small>
+    </div>
+  </div>
+  <div class="modal-body">
+    <div class="modal-in">
+      <section class="sec" id="sec-general">
+        <h2>General</h2>
+        <div class="panel">
+          <b>Updates</b>
+          <p class="note" id="updText">Version</p>
+          <div class="bar" id="updBarWrap" hidden><i id="updBar"></i></div>
+          <div class="row2"><button class="btn" id="updCheck">Check for updates</button><button class="btn primary" id="updInstall" hidden>Restart to update</button></div>
+          <p class="note">Switcheroo also checks by itself every few hours and installs a downloaded update the next time you quit.</p>
+        </div>
+        <div class="panel">
+          <b>Startup</b>
+          <label class="row"><span>Start Switcheroo with Windows</span><span class="switch"><input type="checkbox" id="autostart2"><i></i></span></label>
+        </div>
+        <div class="panel">
+          <b>What is measured</b>
+          <p class="note">Every check saves: download speed, latency, the slowest ping, jitter (how steady the pings are), packet loss, signal strength, link speed, channel, radio type, and every time Windows failed to join a network. Nothing leaves this PC.</p>
+        </div>
+      </section>
+
+      <section class="sec" id="sec-houses" hidden>
+        <h2>Households</h2>
+        <div class="panel">
+          <b>Auto detect</b>
+          <label class="row"><span>Create a household by itself when I join a new network that has a 5G or 2.4G partner</span>
+            <span class="switch"><input type="checkbox" id="autoDetect"><i></i></span></label>
+          <div class="row2"><button class="btn" id="detectNow">Detect from the network I am on</button></div>
+          <p class="note" id="detectNote">Networks are paired by name, like Home and Home_5G or Casa-2.4GHz and Casa-5GHz.</p>
+        </div>
+      </section>
+
+      <section class="sec" id="sec-game" hidden>
+        <h2>Game mode</h2>
+        <div class="panel">
+          <label class="row"><span>Switch to the network with better averages when a game opens</span>
+            <span class="switch"><input type="checkbox" id="gameOn"><i></i></span></label>
+          <label class="field wide">Extra game programs (exe names, comma separated)<input id="extraGames" placeholder="mygame.exe, other.exe"></label>
+          <p class="note">Common games are detected automatically. Game mode only pings, so it adds no lag, and it never switches in the middle of a match.</p>
+        </div>
+      </section>
+
+      <section class="sec" id="sec-data" hidden>
+        <h2>Saved data</h2>
+        <div class="panel">
+          <p class="path" id="dataPath"></p>
+          <div class="bar"><i id="dataBar"></i></div>
+          <p class="note" id="dataText"></p>
+          <label class="field wide">Size limit
+            <select id="maxMb"><option value="25">25 MB</option><option value="50">50 MB</option><option value="100">100 MB</option><option value="250">250 MB</option><option value="500">500 MB</option><option value="1000">1 GB</option></select>
+          </label>
+          <div class="row2"><button class="btn" id="openData">Open folder</button><button class="btn" id="chooseData">Change folder</button></div>
+          <p class="note">When the folder passes the limit, the oldest days are deleted until it is back under 80 percent. Their totals are kept, so lifetime averages stay correct.</p>
+        </div>
+      </section>
+    </div>
+    <button class="modal-x" id="modalX" aria-label="Close settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg><span>ESC</span></button>
+  </div>
 </div>
 <script src="app.js"></script>
 </body>
