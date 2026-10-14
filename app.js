@@ -244,9 +244,20 @@ const AVG_ROWS = [
 
 async function renderAvg() {
   const range = $("range").value;
-  const data = range === "all" ? S.avg : (await window.api.averages(range)) || {};
+  const raw = range === "all" ? S.avg : (await window.api.averages(range)) || {};
+  fillAvg(raw, "avgHead", "avgBody", "avgNote", "Green marks the better network. Game rank favours low latency and no packet loss.");
+  const clean = (await window.api.cleanAverages(range)) || {};
+  fillAvg(clean, "cleanAvgHead", "cleanAvgBody", "cleanAvgNote", "Cleaned and balanced: impossible values dropped, outliers capped, one median row per 5 minute window. Game mode picks the network using these numbers.");
+}
+
+function setSub(t) {
+  document.querySelectorAll(".sub").forEach((b) => b.classList.toggle("on", b.dataset.sub === t));
+  for (const id of ["raw", "clean"]) $("sub-" + id).hidden = id !== t;
+}
+
+function fillAvg(data, headId, bodyId, noteId, note) {
   const nets = [S.a, S.b].filter(Boolean);
-  const head = $("avgHead");
+  const head = $(headId);
   head.innerHTML = "";
   const hr = document.createElement("tr");
   for (const t of ["", ...nets]) {
@@ -255,7 +266,7 @@ async function renderAvg() {
     hr.appendChild(th);
   }
   head.appendChild(hr);
-  const body = $("avgBody");
+  const body = $(bodyId);
   body.innerHTML = "";
   for (const row of AVG_ROWS) {
     const vals = nets.map((n) => {
@@ -277,9 +288,7 @@ async function renderAvg() {
     });
     body.appendChild(tr);
   }
-  $("avgNote").textContent = nets.length
-    ? "Green marks the better network. Game rank favours low latency and no packet loss, and is what game mode uses."
-    : "Pick two networks to see their averages.";
+  $(noteId).textContent = nets.length ? note : "Pick two networks to see their averages.";
 }
 
 const CLEAN_ROWS = [
@@ -505,6 +514,7 @@ async function init() {
     fillSelect($("selB"), $("selB").value);
   };
   document.querySelectorAll(".tab").forEach((b) => (b.onclick = () => setTab(b.dataset.tab)));
+  document.querySelectorAll(".sub").forEach((b) => (b.onclick = () => setSub(b.dataset.sub)));
   $("openSettings").onclick = () => ($("modal").hidden ? openModal() : closeModal());
   $("modalX").onclick = closeModal;
   document.addEventListener("keydown", (e) => {

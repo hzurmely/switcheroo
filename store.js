@@ -223,6 +223,85 @@ class Store {
     return out;
   }
 
+  // Same numbers as averages(), but on cleaned data: impossible values dropped, extreme outliers capped,
+  // and one median row per 5 minute window so the network you stay on does not count more than the other.
+  // Only uses the saved sample files, never the old summary, so the data is always the detailed kind.
+  cleanAverages(house, since = 0) {
+    const WIN = 5 * 60 * 1000;
+    const med = (a) => {
+      const v = a.filter(has).sort((x, y) => x - y);
+      if (!v.length) return null;
+      const m = v.length >> 1;
+      return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2;
+    };
+    const quant = (v, q) => {
+      const i = (v.length - 1) * q;
+      const lo = Math.floor(i);
+      return v[lo] + (v[Math.min(lo + 1, v.length - 1)] - v[lo]) * (i - lo);
+    };
+    const groups = {};
+    const fails = {};
+    for (const f of this.files()) {
+      if (since && Date.parse(f.name.slice(8, 18)) + DAY < since) continue;
+      for (const r of this.readFile(f)) {
+        if (r.h !== house || r.t < since) continue;
+        if (r.ev === "joinfail") {
+          fails[r.n] = (fails[r.n] || 0) + 1;
+          continue;
+        }
+        const g = ((groups[r.n] ||= {})[Math.floor(r.t / WIN)] ||= []);
+        g.push(r);
+      }
+    }
+    const out = {};
+    for (const n of new Set([...Object.keys(groups), ...Object.keys(fails)])) {
+      const rows = Object.values(groups[n] || {}).map((g) => {
+        const ok = (k, lo, hi) => g.map((r) => r[k]).filter((x) => has(x) && x > lo && x <= hi);
+        return {
+          m: med(ok("m", 0, 5000)),
+          l: med(ok("l", 0, 5000)),
+          x: med(ok("x", 0, 5000)),
+          j: med(g.map((r) => r.j)),
+          s: med(g.map((r) => r.s)),
+          g: med(g.map((r) => r.g)),
+          rx: med(g.map((r) => r.rx)),
+          c: med(g.map((r) => r.c)),
+          p: g.reduce((a, r) => a + (r.p || 0), 0) / g.length,
+        };
+      });
+      for (const k of ["m", "l", "x", "j"]) {
+        const v = rows.map((r) => r[k]).filter(has).sort((a, b) => a - b);
+        if (v.length < 4) continue;
+        const cap = quant(v, 0.75) + 1.5 * (quant(v, 0.75) - quant(v, 0.25));
+        for (const r of rows) if (has(r[k]) && r[k] > cap) r[k] = cap;
+      }
+      const b = fresh();
+      for (const r of rows) accumulate(b, r);
+      b.fails = fails[n] || 0;
+      if (!b.n && !b.fails) continue;
+      out[n] = this.shape(b);
+    }
+    return out;
+  }
+
+  shape(b) {
+    return {
+      n: b.n,
+      mbps: b.mN ? b.mbps / b.mN : null,
+      latency: b.latN ? b.lat / b.latN : null,
+      loss: b.n ? b.loss / b.n : 0,
+      score: b.sN ? b.score / b.sN : null,
+      jitter: b.jitN ? b.jit / b.jitN : null,
+      signal: b.sigN ? b.sig / b.sigN : null,
+      linkRate: b.rateN ? b.rate / b.rateN : null,
+      topMbps: b.topMbps,
+      lowMbps: b.lowMbps,
+      peakLat: b.peakLat,
+      fails: b.fails,
+      band5: b.ch5 + b.ch24 ? b.ch5 / (b.ch5 + b.ch24) : null,
+    };
+  }
+
   prune() {
     const files = this.files();
     let total = this.size();

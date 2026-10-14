@@ -200,3 +200,9 @@ input:focus { box-shadow: 0 0 0 2px var(--blurple); }
 .steps b { color: var(--text); font-weight: 600; }
 .graphs { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 12px; margin-top: 8px; }
 .graphs img { width: 100%; height: auto; border-radius: 8px; display: block; background: var(--bg1); }
+
+.subbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px}
+.subtabs{display:flex;gap:6px;background:#1e1f22;border-radius:8px;padding:3px}
+.sub{background:transparent;border:0;color:#b5bac1;font:inherit;font-weight:600;padding:6px 16px;border-radius:6px;cursor:pointer}
+.sub:hover{color:#fff}
+.sub.on{background:#4e5058;color:#fff}

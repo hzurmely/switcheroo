@@ -86,10 +86,16 @@
     </div>
 
     <div class="pane scroll" id="pane-avg" hidden>
-      <div class="panel">
-        <div class="chart-head"><b>Network averages</b>
-          <select id="range"><option value="day">Last 24 hours</option><option value="week">Last 7 days</option><option value="all" selected>Everything saved</option></select>
+      <div class="subbar">
+        <div class="subtabs">
+          <button class="sub on" data-sub="raw">Raw avg</button>
+          <button class="sub" data-sub="clean">Clean</button>
         </div>
+        <select id="range"><option value="day">Last 24 hours</option><option value="week">Last 7 days</option><option value="all" selected>Everything saved</option></select>
+      </div>
+      <div id="sub-raw">
+      <div class="panel">
+        <div class="chart-head"><b>Network averages (raw)</b></div>
         <table class="avg">
           <thead id="avgHead"></thead>
           <tbody id="avgBody"></tbody>
@@ -99,14 +105,25 @@
         <div class="row2"><button class="btn" id="exportRaw">Save every measurement as CSV</button></div>
         <p class="note" id="csvNote"></p>
       </div>
+      </div>
+      <div id="sub-clean" hidden>
+      <div class="panel">
+        <div class="chart-head"><b>Network averages (clean)</b></div>
+        <table class="avg">
+          <thead id="cleanAvgHead"></thead>
+          <tbody id="cleanAvgBody"></tbody>
+        </table>
+        <p class="note" id="cleanAvgNote"></p>
+      </div>
       <div class="panel" id="cleanPanel">
-        <div class="chart-head"><b>Raw data and clean data</b></div>
+        <div class="chart-head"><b>Raw data vs clean data</b></div>
         <p class="note">Switcheroo measures the network you are on every 30 seconds and the other one every 4 minutes, so the network you stay on has far more samples. Python cleans the data (types, duplicates, missing values, impossible values, outliers), then balances both networks with one median row per 5 minute window.</p>
         <div class="row2"><button class="btn primary" id="runClean">Clean data and make graphs</button><button class="btn" id="openClean" hidden>Open folder</button></div>
         <p class="note" id="cleanNote"></p>
         <table class="avg" id="cleanTable" hidden><thead id="cleanHead"></thead><tbody id="cleanBody"></tbody></table>
         <ol class="steps" id="cleanSteps"></ol>
         <div class="graphs" id="cleanGraphs"></div>
+      </div>
       </div>
     </div>
 

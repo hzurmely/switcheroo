@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld("api", {
   profiles: () => ipcRenderer.invoke("profiles"),
   start: () => ipcRenderer.invoke("start"),
   averages: (range) => ipcRenderer.invoke("averages", range),
+  cleanAverages: (range) => ipcRenderer.invoke("averages:clean", range),
   storage: () => ipcRenderer.invoke("storage"),
   saveHouse: (h) => ipcRenderer.invoke("house:save", h),
   selectHouse: (id) => ipcRenderer.invoke("house:select", id),

@@ -100,7 +100,14 @@ function startEngine() {
   cache.status = {};
   cache.series = [];
   cache.active = null;
-  engine = new Engine(sys, [a, b], { averages: () => (store ? store.averages(house.id) : {}) });
+  engine = new Engine(sys, [a, b], {
+    averages: () => {
+      if (!store) return {};
+      // game mode ranks networks on the cleaned, balanced data, and falls back to the raw averages when there is none yet
+      const clean = store.cleanAverages(house.id);
+      return Object.keys(clean).length ? clean : store.averages(house.id);
+    },
+  });
   const mine = engine;
   engine.on("log", (e) => {
     if (engine !== mine) return;
@@ -277,6 +284,12 @@ function fullState() {
 ipcMain.handle("state", async () => ({ ...fullState(), profiles: await sys.profiles() }));
 ipcMain.handle("profiles", () => sys.profiles());
 ipcMain.handle("averages", (_e, range) => getAverages(range));
+ipcMain.handle("averages:clean", (_e, range) => {
+  const h = currentHouse();
+  if (!h || !store) return {};
+  const since = range === "day" ? Date.now() - 86400000 : range === "week" ? Date.now() - 7 * 86400000 : 0;
+  return store.cleanAverages(h.id, since);
+});
 ipcMain.handle("storage", () => storageInfo());
 
 // Add or update a household: { id?, name, a, b }
