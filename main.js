@@ -1,8 +1,10 @@
-const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage } = require("electron");
+const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, shell, dialog } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const { Engine } = require("./engine");
 const sys = require("./netwin");
+const { Store } = require("./store");
+const games = require("./games");
 
 const ASSETS = __dirname;
 const hiddenStart = process.argv.includes("--hidden");
@@ -11,7 +13,10 @@ let win = null;
 let tray = null;
 let engine = null;
 let quitting = false;
-const cache = { logs: [], status: {}, active: null, series: [] };
+const cache = { logs: [], status: {}, active: null, series: [], game: null };
+let store = null;
+let runHouse = null; // household the running engine belongs to
+const avgCache = {};
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -37,18 +42,58 @@ function saveSettings(patch) {
   return next;
 }
 
+// ---------------------------------------------------------------- households
+
+function houses() {
+  const st = loadSettings();
+  if (Array.isArray(st.houses)) return st.houses;
+  if (st.a && st.b) {
+    const h = [{ id: "h1", name: "Home", a: st.a, b: st.b }];
+    saveSettings({ houses: h, house: "h1" });
+    return h;
+  }
+  return [];
+}
+function currentHouse() {
+  const list = houses();
+  const id = loadSettings().house;
+  return list.find((h) => h.id === id) || list[0] || null;
+}
+const sameName = (a, b) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
+
+function getAverages(range) {
+  const h = currentHouse();
+  if (!h || !store) return {};
+  const key = h.id + "|" + range;
+  const hit = avgCache[key];
+  if (hit && Date.now() - hit.at < 20000) return hit.v;
+  const since = range === "day" ? Date.now() - 86400000 : range === "week" ? Date.now() - 7 * 86400000 : 0;
+  const v = store.averages(h.id, since);
+  avgCache[key] = { at: Date.now(), v };
+  return v;
+}
+
+function storageInfo() {
+  return { dir: store.dir, size: store.size(), max: store.maxBytes };
+}
+
 // ---------------------------------------------------------------- engine control
 
 function send(channel, payload) {
   if (win && !win.isDestroyed()) win.webContents.send(channel, payload);
 }
 
-function startEngine(a, b) {
-  if (engine || !a || !b || a === b) return false;
+function startEngine() {
+  const house = currentHouse();
+  if (engine || !house || !house.a || !house.b || house.a === house.b) return false;
+  const a = house.a;
+  const b = house.b;
+  runHouse = house.id;
+  cache.game = null;
   cache.status = {};
   cache.series = [];
   cache.active = null;
-  engine = new Engine(sys, [a, b]);
+  engine = new Engine(sys, [a, b], { averages: () => (store ? store.averages(house.id) : {}) });
   const mine = engine;
   engine.on("log", (e) => {
     cache.logs.push(e);
@@ -59,7 +104,13 @@ function startEngine(a, b) {
     cache.status[s.net] = s;
     cache.series.push({ net: s.net, score: s.m.score, ts: s.ts });
     if (cache.series.length > 120) cache.series.shift();
+    if (store) store.add({ ...s.m, ts: s.ts, house: house.id, net: s.net, mode: s.mode, signal: s.signal });
     send("status", s);
+    updateTray();
+  });
+  engine.on("game", (g) => {
+    cache.game = g;
+    send("game", g);
     updateTray();
   });
   engine.on("active", (n) => {
@@ -72,7 +123,7 @@ function startEngine(a, b) {
     send("running", !!engine);
     updateTray();
   });
-  saveSettings({ a, b, running: true });
+  saveSettings({ running: true });
   send("running", true);
   engine.run();
   updateTray();
@@ -82,6 +133,8 @@ function startEngine(a, b) {
 function stopEngine() {
   if (engine) engine.stop();
   engine = null;
+  cache.game = null;
+  send("game", null);
   saveSettings({ running: false });
   send("running", false);
   updateTray();
@@ -143,7 +196,7 @@ function updateTray() {
   const s = cache.active && cache.status[cache.active];
   tray.setToolTip(
     running
-      ? `Switcheroo: on ${cache.active || "..."}${s ? ", " + s.m.mbps.toFixed(1) + " Mbps" : ""}`
+      ? `Switcheroo${cache.game ? " (game mode)" : ""}: on ${cache.active || "..."}${s && s.m.mbps != null ? ", " + s.m.mbps.toFixed(1) + " Mbps" : ""}`
       : "Switcheroo: paused"
   );
   tray.setContextMenu(
@@ -152,9 +205,8 @@ function updateTray() {
       {
         label: running ? "Pause switching" : "Resume switching",
         click: () => {
-          const st = loadSettings();
           if (running) stopEngine();
-          else if (!startEngine(st.a, st.b)) showWindow();
+          else if (!startEngine()) showWindow();
         },
       },
       {
@@ -181,28 +233,127 @@ function updateTray() {
 
 // ---------------------------------------------------------------- IPC
 
-ipcMain.handle("state", async () => {
-  const s = loadSettings();
+function fullState() {
+  const st = loadSettings();
   return {
-    profiles: await sys.profiles(),
-    a: s.a || "",
-    b: s.b || "",
+    houses: houses(),
+    house: (currentHouse() || {}).id || null,
     running: !!engine,
     autostart: autostartOn(),
     active: cache.active,
     status: cache.status,
     series: cache.series,
     logs: cache.logs,
+    game: cache.game,
+    prefs: { game: st.game !== false, extraGames: st.extraGames || [], maxMb: st.maxMb || 50 },
+    storage: storageInfo(),
   };
-});
+}
+
+ipcMain.handle("state", async () => ({ ...fullState(), profiles: await sys.profiles() }));
 ipcMain.handle("profiles", () => sys.profiles());
-ipcMain.handle("start", (_e, a, b) => startEngine(a, b));
+ipcMain.handle("averages", (_e, range) => getAverages(range));
+ipcMain.handle("storage", () => storageInfo());
+
+// Add or update a household: { id?, name, a, b }
+ipcMain.handle("house:save", (_e, h) => {
+  const list = houses().slice();
+  const clean = { id: h.id || "h" + Date.now().toString(36), name: String(h.name || "House").slice(0, 24), a: h.a || "", b: h.b || "" };
+  const i = list.findIndex((x) => x.id === clean.id);
+  if (i >= 0) list[i] = clean;
+  else list.push(clean);
+  const wasRunning = !!engine && runHouse === clean.id;
+  saveSettings({ houses: list, house: clean.id });
+  if (engine && (wasRunning || runHouse !== clean.id)) {
+    stopEngine();
+    startEngine();
+  }
+  send("houses", { houses: list, house: clean.id });
+  return clean.id;
+});
+ipcMain.handle("house:select", (_e, id) => {
+  if (!houses().some((h) => h.id === id)) return false;
+  const was = !!engine;
+  if (was) stopEngine();
+  saveSettings({ house: id });
+  cache.status = {};
+  cache.series = [];
+  cache.active = null;
+  if (was) startEngine();
+  send("houses", { houses: houses(), house: id });
+  return true;
+});
+ipcMain.handle("house:delete", (_e, id) => {
+  const list = houses().filter((h) => h.id !== id);
+  const was = !!engine && runHouse === id;
+  if (was) stopEngine();
+  saveSettings({ houses: list, house: list[0] ? list[0].id : null });
+  send("houses", { houses: list, house: list[0] ? list[0].id : null });
+  return true;
+});
+
+ipcMain.handle("start", () => startEngine());
 ipcMain.handle("stop", () => stopEngine());
 ipcMain.handle("autostart", (_e, on) => {
   setAutostart(on);
   updateTray();
   return autostartOn();
 });
+
+ipcMain.handle("prefs:set", (_e, p) => {
+  const patch = {};
+  if (typeof p.game === "boolean") patch.game = p.game;
+  if (Array.isArray(p.extraGames)) patch.extraGames = p.extraGames.map(String).slice(0, 50);
+  if (Number(p.maxMb) >= 5) {
+    patch.maxMb = Math.min(5000, Math.floor(Number(p.maxMb)));
+    store.setMax(patch.maxMb * 1024 * 1024);
+  }
+  saveSettings(patch);
+  if (patch.game === false && engine) engine.setGame(null);
+  return fullState().prefs;
+});
+ipcMain.handle("data:open", () => shell.openPath(store.dir));
+ipcMain.handle("data:choose", async () => {
+  const r = await dialog.showOpenDialog(win, { properties: ["openDirectory", "createDirectory"], defaultPath: store.dir });
+  if (r.canceled || !r.filePaths[0]) return storageInfo();
+  const dir = r.filePaths[0];
+  store.setDir(dir);
+  saveSettings({ dataDir: dir });
+  for (const k of Object.keys(avgCache)) delete avgCache[k];
+  return storageInfo();
+});
+
+// ---------------------------------------------------------------- background watchers
+
+// Looks for a running game and tells the engine.
+async function watchGames() {
+  if (!engine) return;
+  const st = loadSettings();
+  if (st.game === false) return;
+  const found = await games.detect(st.extraGames || []);
+  if (engine) engine.setGame(found);
+}
+
+// If the PC joins a network that belongs to another household, follow it.
+async function watchLocation() {
+  const list = houses();
+  if (list.length < 2) return;
+  const c = await sys.current();
+  if (!c.ssid) return;
+  const cur = currentHouse();
+  if (cur && (sameName(cur.a, c.ssid) || sameName(cur.b, c.ssid))) return;
+  const match = list.find((h) => sameName(h.a, c.ssid) || sameName(h.b, c.ssid));
+  if (!match) return;
+  const was = !!engine;
+  if (was) stopEngine();
+  saveSettings({ house: match.id });
+  cache.status = {};
+  cache.series = [];
+  cache.active = null;
+  if (was) startEngine();
+  send("houses", { houses: list, house: match.id });
+  send("log", { ts: Date.now(), text: `Arrived at ${match.name}, switched household` });
+}
 
 // ---------------------------------------------------------------- lifecycle
 
@@ -214,7 +365,16 @@ app.whenReady().then(() => {
   updateTray();
 
   const s = loadSettings();
-  if (s.running && s.a && s.b) startEngine(s.a, s.b);
+  const dir = s.dataDir || path.join(app.getPath("documents"), "Switcheroo Data");
+  store = new Store(dir, (s.maxMb || 50) * 1024 * 1024);
+  store.prune();
+  setInterval(() => store.prune(), 3600000);
+  setInterval(() => watchGames().catch(() => {}), 10000);
+  setInterval(() => watchLocation().catch(() => {}), 25000);
+
+  watchLocation().catch(() => {}).finally(() => {
+    if (s.running) startEngine();
+  });
 });
 
 app.on("before-quit", () => {

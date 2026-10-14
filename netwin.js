@@ -114,4 +114,19 @@ async function measure() {
   return { latency, loss, mbps, score };
 }
 
-module.exports = { profiles, current, connect, internetOk, measure };
+// Latency and loss only, no download. Used while gaming so tests never add lag.
+async function ping() {
+  const times = [];
+  let lost = 0;
+  const samples = 5;
+  for (let i = 0; i < samples; i++) {
+    const [h, p] = HOSTS[i % HOSTS.length];
+    const t = await tcpPing(h, p);
+    if (t === null) lost++;
+    else times.push(t);
+  }
+  times.sort((a, b) => a - b);
+  return { latency: times.length ? times[Math.floor(times.length / 2)] : null, loss: lost / samples, mbps: null, score: null };
+}
+
+module.exports = { profiles, current, connect, internetOk, measure, ping };
