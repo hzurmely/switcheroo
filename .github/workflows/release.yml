@@ -21,6 +21,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="${GITHUB_REF_NAME}"
-          if [ "${GITHUB_REF_TYPE}" != "tag" ]; then TAG="v2.0.0"; fi
-          gh release create "$TAG" dist/Switcheroo-Setup-*.exe --repo "$GITHUB_REPOSITORY" --title "Switcheroo $TAG" --notes "Windows 11 app. Download the installer, run it, pick your two saved Wi-Fi networks and press Start switching."
+          TAG="v$(node -p "require('./package.json').version")"
+          gh release create "$TAG" dist/Switcheroo-Setup-*.exe --repo "$GITHUB_REPOSITORY" --title "Switcheroo $TAG" --notes "Windows 11 app. Download the installer and run it. New: average speed and latency per network, game mode, saved data with automatic cleanup, households, new logo."
