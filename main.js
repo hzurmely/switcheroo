@@ -2,7 +2,7 @@ const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, shell, dialog } = 
 const path = require("path");
 const fs = require("fs");
 const { Engine } = require("./engine");
-const sys = require("./netwin");
+const sys = process.platform === "darwin" ? require("./netmac") : require("./netwin");
 const { Store } = require("./store");
 const games = require("./games");
 const updater = require("./updater");
@@ -167,8 +167,9 @@ function createWindow() {
     backgroundColor: "#1e1f22",
     title: "Switcheroo",
     icon: path.join(ASSETS, "icon.png"),
-    titleBarStyle: "hidden",
-    titleBarOverlay: { color: "#1e1f22", symbolColor: "#dbdee1", height: 32 },
+    ...(process.platform === "win32"
+      ? { titleBarStyle: "hidden", titleBarOverlay: { color: "#1e1f22", symbolColor: "#dbdee1", height: 32 } }
+      : {}),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -178,6 +179,9 @@ function createWindow() {
   });
   win.setMenuBarVisibility(false);
   win.loadFile(path.join(__dirname, "index.html"));
+  win.webContents.on("did-finish-load", () => {
+    if (process.platform !== "win32") win.webContents.insertCSS(".titlebar{display:none}").catch(() => {});
+  });
   win.once("ready-to-show", () => {
     if (!hiddenStart) win.show();
   });
@@ -498,3 +502,4 @@ app.on("before-quit", () => {
   if (engine) engine.stop();
 });
 app.on("window-all-closed", () => {});
+app.on("activate", () => showWindow());
