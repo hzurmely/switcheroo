@@ -5,6 +5,8 @@ const { Engine } = require("./engine");
 const sys = require("./netwin");
 const { Store } = require("./store");
 const games = require("./games");
+const updater = require("./updater");
+let updateVersion = null;
 
 const ASSETS = __dirname;
 const hiddenStart = process.argv.includes("--hidden");
@@ -218,6 +220,9 @@ function updateTray() {
           send("autostart", item.checked);
         },
       },
+      updateVersion
+        ? { label: `Restart to update to ${updateVersion}`, click: () => { quitting = true; updater.installNow(); } }
+        : { label: "Check for updates", click: () => updater.check() },
       { type: "separator" },
       {
         label: "Quit",
@@ -363,6 +368,18 @@ app.whenReady().then(() => {
   tray = new Tray(nativeImage.createFromPath(path.join(ASSETS, "tray-off.png")));
   tray.on("click", showWindow);
   updateTray();
+
+  updater.init({
+    log: (text) => {
+      const e = { ts: Date.now(), text };
+      cache.logs.push(e);
+      send("log", e);
+    },
+    onReady: (v) => {
+      updateVersion = v;
+      updateTray();
+    },
+  });
 
   const s = loadSettings();
   const dir = s.dataDir || path.join(app.getPath("documents"), "Switcheroo Data");

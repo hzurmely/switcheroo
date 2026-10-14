@@ -1,7 +1,7 @@
 {
   "name": "switcheroo",
   "productName": "Switcheroo",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Tests two Wi-Fi networks in the background and switches to the faster one.",
   "main": "main.js",
   "author": "hzurmely",
@@ -34,6 +34,16 @@
       "oneClick": true,
       "perMachine": false,
       "runAfterFinish": true
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "hzurmely",
+        "repo": "switcheroo"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
   }
 }

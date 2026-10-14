@@ -12,6 +12,10 @@ Download `Switcheroo-Setup-<version>.exe` from the Releases page, run it, pick y
 
 Both networks must already be saved in Windows (connect to each one once).
 
+## Updates
+
+The installed app checks GitHub for a new release every few hours, downloads it quietly and installs it the next time you quit. The tray menu also has Check for updates and, once one is ready, Restart to update.
+
 ## Households
 
 Add a household for each place you live, each with its own pair of networks (the + button in the left rail). When your PC joins a network that belongs to another household, Switcheroo follows it automatically.
