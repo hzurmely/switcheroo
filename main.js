@@ -335,6 +335,18 @@ ipcMain.handle("data:open", () => shell.openPath(store.dir));
 ipcMain.handle("data:reveal", (_e, file) => {
   if (typeof file === "string" && path.dirname(file) === store.dir) shell.showItemInFolder(file);
 });
+ipcMain.handle("data:csv", () => {
+  const d = new Date();
+  const p2 = (n) => String(n).padStart(2, "0");
+  const file = path.join(store.dir, `raw-samples-${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}_${p2(d.getHours())}${p2(d.getMinutes())}.csv`);
+  const names = Object.fromEntries(houses().map((h) => [h.id, h.name]));
+  try {
+    const rows = store.exportCsv(file, (id) => names[id] || id);
+    return { ok: true, file, rows };
+  } catch (e) {
+    return { ok: false, error: String(e.message || e) };
+  }
+});
 ipcMain.handle("avg:csv", (_e, range, text) => {
   const safe = ["day", "week", "all"].includes(range) ? range : "all";
   const d = new Date();

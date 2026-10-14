@@ -152,6 +152,28 @@ class Store {
     return out;
   }
 
+  // Writes every saved measurement to a CSV file, one row per measurement. Returns the row count.
+  exportCsv(file, houseName = (id) => id) {
+    const cols = ["time_utc", "unix_ms", "household", "network", "mode", "mbps", "latency_ms", "max_latency_ms", "jitter_ms", "packet_loss", "score", "signal_pct", "rx_mbps", "tx_mbps", "channel", "radio", "event"];
+    const q = (v) => (v === null || v === undefined ? "" : /[",\r\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v));
+    const fd = fs.openSync(file, "w");
+    let rows = 0;
+    try {
+      fs.writeSync(fd, "\ufeff" + cols.join(",") + "\r\n");
+      for (const f of this.files()) {
+        let buf = "";
+        for (const r of this.readFile(f)) {
+          buf += [new Date(r.t).toISOString(), r.t, houseName(r.h), r.n, r.md, r.m, r.l, r.x, r.j, r.p, r.s, r.g, r.rx, r.tx, r.c, r.rd, r.ev].map(q).join(",") + "\r\n";
+          rows++;
+        }
+        if (buf) fs.writeSync(fd, buf);
+      }
+    } finally {
+      fs.closeSync(fd);
+    }
+    return rows;
+  }
+
   summary() {
     try {
       return JSON.parse(fs.readFileSync(path.join(this.dir, "summary.json"), "utf8"));

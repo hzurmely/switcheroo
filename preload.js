@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld("api", {
   selectHouse: (id) => ipcRenderer.invoke("house:select", id),
   deleteHouse: (id) => ipcRenderer.invoke("house:delete", id),
   exportCsv: (range, text) => ipcRenderer.invoke("avg:csv", range, text),
+  exportRaw: () => ipcRenderer.invoke("data:csv"),
   revealFile: (f) => ipcRenderer.invoke("data:reveal", f),
   setPrefs: (p) => ipcRenderer.invoke("prefs:set", p),
   openData: () => ipcRenderer.invoke("data:open"),

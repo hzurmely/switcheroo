@@ -447,6 +447,13 @@ async function init() {
   };
   $("autoUpdate").onchange = async (e) => ((S.prefs = await window.api.setPrefs({ autoUpdate: e.target.checked })), renderSettings());
   $("exportCsv").onclick = exportCsv;
+  $("exportRaw").onclick = async () => {
+    $("csvNote").textContent = "Saving...";
+    const r = await window.api.exportRaw();
+    lastCsv = r.ok ? r.file : null;
+    $("csvNote").textContent = r.ok ? `Saved ${r.rows} rows to ${r.file}` : "Could not save: " + r.error;
+    $("revealCsv").hidden = !r.ok;
+  };
   $("revealCsv").onclick = () => lastCsv && window.api.revealFile(lastCsv);
   $("autoDetect").onchange = async (e) => ((S.prefs = await window.api.setPrefs({ autoDetect: e.target.checked })), renderSettings());
   $("detectNow").onclick = async () => {
