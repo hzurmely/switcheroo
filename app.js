@@ -98,6 +98,7 @@ function render() {
   btn.textContent = S.running ? "Stop switching" : "Start switching";
   btn.classList.toggle("stop", S.running);
   $("presence").classList.toggle("on", S.running);
+  $("presence").classList.toggle("game", !!S.game);
   $("stateTitle").textContent = S.running ? "Switching" : "Paused";
   $("stateSub").textContent = S.running ? (S.active ? "On " + S.active : "Connecting...") : "Not switching";
   $("topic").textContent = S.running
@@ -519,6 +520,7 @@ async function init() {
   document.querySelectorAll(".tab").forEach((b) => (b.onclick = () => setTab(b.dataset.tab)));
   document.querySelectorAll(".sub").forEach((b) => (b.onclick = () => setSub(b.dataset.sub)));
   pyWire();
+  rooWire();
   $("openSettings").onclick = () => ($("modal").hidden ? openModal() : closeModal());
   $("modalX").onclick = closeModal;
   document.addEventListener("keydown", (e) => {
@@ -601,6 +603,7 @@ async function init() {
   let lastAvg = 0;
   window.api.on("log", addMessage);
   window.api.on("running", (r) => {
+    if (r && !S.running) rooDo("roo-thumb");
     S.running = r;
     if (!r) {
       S.active = null;
@@ -609,6 +612,7 @@ async function init() {
     render();
   });
   window.api.on("active", (n) => {
+    if (S.active && n !== S.active) rooDo("roo-hop");
     S.active = n;
     render();
   });
@@ -864,4 +868,25 @@ function pyWire() {
       inp.value = pyHistPos < pyHistory.length - 1 ? pyHistory[++pyHistPos] : ((pyHistPos = pyHistory.length), "");
     }
   };
+}
+
+
+// ---------------------------------------------------------------- Roo, the profile picture
+// One shot actions: add the class, take it away when the animation ends (see mascot/README.md).
+function rooDo(cls) {
+  const roo = document.getElementById("switcheroo");
+  if (!roo) return;
+  roo.classList.remove(cls);
+  void roo.getBBox();
+  roo.classList.add(cls);
+  if (cls === "roo-hop") setTimeout(() => roo.classList.toggle("roo-swapped"), 400);
+}
+function rooWire() {
+  const roo = document.getElementById("switcheroo");
+  if (!roo) return;
+  roo.addEventListener("animationend", (e) => {
+    if (e.animationName === "roo-hop") roo.classList.remove("roo-hop");
+    if (e.animationName === "roo-thumb-head") roo.classList.remove("roo-thumb");
+  });
+  document.getElementById("presence").onclick = () => rooDo("roo-hop");
 }
