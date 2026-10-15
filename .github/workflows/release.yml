@@ -22,7 +22,28 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v$(node -p "require('./package.json').version")"
-          gh release create "$TAG" dist/Switcheroo-Setup-*.exe dist/latest.yml dist/*.blockmap --repo "$GITHUB_REPOSITORY" --title "Switcheroo $TAG" --notes "Windows 11 app. Download the installer and run it. New: automatic updates. The app now updates itself from here."
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/Switcheroo-Setup-*.exe dist/latest.yml dist/*.blockmap --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" dist/Switcheroo-Setup-*.exe dist/latest.yml dist/*.blockmap --repo "$GITHUB_REPOSITORY" --title "Switcheroo $TAG" --notes "Windows 11 app. Download the installer and run it. New: automatic updates. The app now updates itself from here."
+          fi
+
+  mac:
+    needs: release
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm run dist:mac
+      - name: Attach Mac builds to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v$(node -p "require('./package.json').version")"
+          gh release upload "$TAG" dist/*.dmg --repo "$GITHUB_REPOSITORY" --clobber
 
   winget:
     needs: release
