@@ -230,13 +230,12 @@ input:focus { box-shadow: 0 0 0 2px var(--blurple); }
 .pyterm-in span{color:var(--green);font:13px Consolas,monospace}
 .pyterm-in input{flex:1;background:var(--bg1);border:0;border-radius:6px;color:var(--text);padding:6px 10px;font:13px Consolas,"Courier New",monospace;outline:none}
 
-/* Roo as the profile picture. A round disc sits behind him and only his bottom is cut by it, so ears and hops reach out of the circle. */
+/* Roo as the profile picture. No background, like a transparent PNG profile picture: only his bottom is cut by a round edge, so ears and hops reach out of the circle. */
 .rooav { position: relative; width: 40px; height: 40px; flex: none; cursor: pointer; }
 .user { position: relative; z-index: 3; }
 .roowrap { position: absolute; inset: 0; overflow: visible; clip-path: inset(-150px -2px 0 -30px round 0 0 20px 20px); }
-.roowrap::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: #e3eef9; }
 .roowrap svg { position: absolute; width: 116.2px; height: 108.1px; left: -48.4px; top: -1px; max-width: none; overflow: visible; }
-.rooav .dot { position: absolute; right: -3px; bottom: -3px; width: 14px; height: 14px; box-sizing: border-box; border-radius: 50%; background: var(--muted); border: 3px solid var(--bg0); transition: background .2s; }
+.rooav .dot { position: absolute; right: -10px; bottom: -5px; width: 14px; height: 14px; box-sizing: border-box; border-radius: 50%; background: var(--muted); border: 3px solid var(--bg0); transition: background .2s; }
 .rooav.on .dot { background: var(--green); }
 .rooav.game .dot { background: var(--blurple); }
 
