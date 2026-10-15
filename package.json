@@ -10,7 +10,7 @@
     "start": "electron .",
     "test": "node engine.test.js && node retry.test.js && node detect.test.js && node games.test.js",
     "dist": "electron-builder --win nsis --publish never",
-    "dist:mac": "electron-builder --mac dmg --publish never"
+    "dist:mac": "electron-builder --mac dmg --x64 --arm64 --publish never"
   },
   "devDependencies": {
     "electron": "^33.2.0",
