@@ -57,9 +57,12 @@ def start():
     import matplotlib.pyplot as plt
     import numpy as np
     import pandas as pd
+    from cycler import cycler
 
     plt.style.use("dark_background")
-    plt.rcParams.update({"figure.facecolor": "#2b2d31", "axes.facecolor": "#2b2d31", "savefig.facecolor": "#2b2d31", "figure.figsize": (8, 3.6)})
+    plt.rcParams.update({"figure.facecolor": "#2b2d31", "axes.facecolor": "#2b2d31", "savefig.facecolor": "#2b2d31", "figure.figsize": (8, 3.6),
+                         # brand colors only: blue, red, white and tints of blue (the default cycle has green and purple)
+                         "axes.prop_cycle": cycler(color=["#3d87d6", "#ef4135", "#e3eef9", "#7aa7d9", "#a6322a", "#c9dcf1"])})
     pd.set_option("display.width", 110)
     pd.set_option("display.max_columns", 30)
     ns.update({"pd": pd, "np": np, "plt": plt})

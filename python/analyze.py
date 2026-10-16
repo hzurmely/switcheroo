@@ -53,7 +53,7 @@ for r in redes:
 
 # ---------------------------------------------------------------- graphs
 FUNDO, TEXTO, GRADE = "#2b2d31", "#dbdee1", "#3f4147"
-CORES = ["#5865f2", "#23a559"]
+CORES = ["#3d87d6", "#ef4135"]
 plt.rcParams.update({
     "figure.facecolor": FUNDO, "axes.facecolor": FUNDO, "savefig.facecolor": FUNDO,
     "text.color": TEXTO, "axes.labelcolor": TEXTO, "xtick.color": TEXTO, "ytick.color": TEXTO,
