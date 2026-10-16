@@ -6,6 +6,7 @@ const sys = process.platform === "darwin" ? require("./netmac") : require("./net
 const { Store } = require("./store");
 const games = require("./games");
 const updater = require("./updater");
+const { trayLabel } = require("./traylabel");
 const { detectPair } = require("./detect");
 let updateVersion = null;
 
@@ -16,7 +17,7 @@ let win = null;
 let tray = null;
 let engine = null;
 let quitting = false;
-const cache = { logs: [], status: {}, active: null, series: [], game: null };
+const cache = { logs: [], status: {}, active: null, pair: null, series: [], game: null };
 let store = null;
 let runHouse = null; // household the running engine belongs to
 const avgCache = {};
@@ -100,6 +101,7 @@ function startEngine() {
   cache.status = {};
   cache.series = [];
   cache.active = null;
+  cache.pair = [a, b];
   engine = new Engine(sys, [a, b], {
     averages: () => {
       if (!store) return {};
@@ -226,9 +228,13 @@ function setAutostart(on) {
 
 // macOS menu bar icons are monochrome template images that the system tints to
 // match the bar, like its own Wi-Fi and volume icons. Windows keeps the colour icon.
-function trayIcon(running) {
+function trayIcon(running, label) {
   const state = running ? "on" : "off";
-  if (process.platform !== "darwin") return nativeImage.createFromPath(path.join(ASSETS, `tray-${state}.png`));
+  if (process.platform !== "darwin") {
+    // Windows tray icons cannot carry text, so the active network is drawn into the icon (scripts/make-tray-badges.py)
+    const badge = running && label ? path.join(ASSETS, `tray-on-${label}.png`) : "";
+    return nativeImage.createFromPath(badge && fs.existsSync(badge) ? badge : path.join(ASSETS, `tray-${state}.png`));
+  }
   const img = nativeImage.createFromPath(path.join(ASSETS, `tray-${state}Template.png`));
   img.setTemplateImage(true);
   return img;
@@ -237,7 +243,10 @@ function trayIcon(running) {
 function updateTray() {
   if (!tray) return;
   const running = !!engine;
-  tray.setImage(trayIcon(running));
+  const label = running ? trayLabel(cache.active, cache.pair) : "";
+  tray.setImage(trayIcon(running, label));
+  // on Mac the label sits in the menu bar next to the icon
+  if (process.platform === "darwin") tray.setTitle(label ? ` ${label}` : "");
   const s = cache.active && cache.status[cache.active];
   tray.setToolTip(
     running

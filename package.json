@@ -1,14 +1,14 @@
 {
   "name": "switcheroo",
   "productName": "Switcheroo",
-  "version": "2.7.4",
+  "version": "2.7.5",
   "description": "Tests two Wi-Fi networks in the background and switches to the faster one.",
   "main": "main.js",
   "author": "hzurmely",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "test": "node engine.test.js && node retry.test.js && node detect.test.js && node games.test.js",
+    "test": "node engine.test.js && node retry.test.js && node detect.test.js && node games.test.js && node traylabel.test.js",
     "dist": "electron-builder --win nsis --publish never",
     "dist:mac": "electron-builder --mac dmg --x64 --arm64 --publish never"
   },
