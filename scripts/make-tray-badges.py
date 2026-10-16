@@ -1,7 +1,7 @@
 """Draws the Windows tray icons for Switcheroo.
 
 Windows tray icons cannot carry text, so the active network is drawn into the icon:
-a blue tile with the label on it (5G, 2.4, A or B). With no label (before the first
+a brand blue tile with the label on it (5G, 2.4, A or B). With no label (before the first
 switch) the plain Wi-Fi icon is used, grey when paused. No white square, transparent
 corners, drawn directly at each size so 16 px stays sharp.
 
@@ -26,8 +26,8 @@ FONTS = [
     "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
 ]
 SS = 16  # supersampling
-TILE = (88, 101, 242, 255)  # the app's blurple
-RED, BLUE, GREY = (255, 90, 79, 255), (61, 139, 255, 255), (139, 142, 150, 255)
+TILE = (0, 85, 164, 255)  # brand blue
+RED, BLUE, GREY = (239, 65, 53, 255), (61, 135, 214, 255), (139, 142, 150, 255)
 
 
 def font(px):
