@@ -40,12 +40,20 @@ function fillSelect(sel, value) {
   sel.value = S.profiles.includes(value) ? value : "";
 }
 
+// Colour of an activity message: green when things worked, yellow when Switcheroo is checking or being careful, red when something failed.
+function logLevel(text) {
+  const t = String(text || "");
+  if (/^Error|^Could not|did not come up|Lost internet|Left the selected networks|failed|could not/i.test(t)) return "bad";
+  if (/^Not on a selected network|^Not enough history|^Testing |not clearly better|Returning to|Going back|Checking for/i.test(t)) return "warn";
+  return "ok";
+}
+
 function addMessage(e) {
   const feed = $("feed");
   const empty = feed.querySelector(".empty");
   if (empty) empty.remove();
   const m = document.createElement("div");
-  m.className = "msg";
+  m.className = "msg " + logLevel(e.text);
   const t = new Date(e.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   m.innerHTML = '<div class="av">' + BOT_SVG + '</div><div class="msg-body"><b>Switcheroo</b><time></time><p></p></div>';
   m.querySelector("time").textContent = t;

@@ -11,6 +11,7 @@
   --pale: #c9dcf1;
   --blue-hi: #3d87d6; /* a lighter blue only for the chart line of network A, brand blue is too dark on this background */
   --ok: #23a559;
+  --warn: #f0b232;
   --red: #ef4135;
   --a: #3d87d6;
   --b: #ef4135;
@@ -117,8 +118,12 @@ canvas { width: 100%; height: 150px; display: block; }
 .feed-head { padding: 10px 14px; font-weight: 700; border-bottom: 1px solid var(--bg0); }
 .feed { flex: 1; overflow: auto; padding: 8px 14px; display: flex; flex-direction: column; gap: 10px; }
 .msg { display: flex; gap: 12px; }
-.msg .av { width: 36px; height: 36px; border-radius: 50%; background: var(--blue); display: grid; place-items: center; flex: none; }
+.msg .av { width: 36px; height: 36px; border-radius: 50%; background: var(--ok); display: grid; place-items: center; flex: none; }
 .msg .av svg { width: 20px; height: 20px; }
+.msg.warn .av { background: var(--warn); }
+.msg.warn .av svg { stroke: #14171c; }
+.msg.warn .av svg circle { fill: #14171c; }
+.msg.bad .av { background: var(--red); }
 .msg-body b { font-weight: 600; margin-right: 8px; }
 .msg-body time { color: var(--muted); font-size: 12px; }
 .msg-body p { margin: 2px 0 0; }
