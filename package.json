@@ -1,7 +1,7 @@
 {
   "name": "switcheroo",
   "productName": "Switcheroo",
-  "version": "2.7.5",
+  "version": "2.7.6",
   "description": "Tests two Wi-Fi networks in the background and switches to the faster one.",
   "main": "main.js",
   "author": "hzurmely",
