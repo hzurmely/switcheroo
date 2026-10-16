@@ -1,5 +1,10 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
+// Lets the stylesheet adapt the title bar to the OS (room for the macOS window buttons).
+window.addEventListener("DOMContentLoaded", () => {
+  document.documentElement.dataset.platform = process.platform;
+});
+
 contextBridge.exposeInMainWorld("api", {
   state: () => ipcRenderer.invoke("state"),
   profiles: () => ipcRenderer.invoke("profiles"),

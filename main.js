@@ -174,9 +174,13 @@ function createWindow() {
     backgroundColor: "#1e1f22",
     title: "Switcheroo",
     icon: path.join(ASSETS, "icon.png"),
+    // One title bar on every platform: the app draws its own (.titlebar in index.html)
+    // and the OS only supplies the window buttons on top of it.
     ...(process.platform === "win32"
       ? { titleBarStyle: "hidden", titleBarOverlay: { color: "#1e1f22", symbolColor: "#dbdee1", height: 32 } }
-      : {}),
+      : process.platform === "darwin"
+        ? { titleBarStyle: "hidden", trafficLightPosition: { x: 12, y: 9 } }
+        : {}),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -186,9 +190,12 @@ function createWindow() {
   });
   win.setMenuBarVisibility(false);
   win.loadFile(path.join(__dirname, "index.html"));
-  win.webContents.on("did-finish-load", () => {
-    if (process.platform !== "win32") win.webContents.insertCSS(".titlebar{display:none}").catch(() => {});
-  });
+  // Linux keeps its native frame, so the app's own bar would be a second one there.
+  if (process.platform === "linux") {
+    win.webContents.on("did-finish-load", () => {
+      win.webContents.insertCSS(".titlebar{display:none}").catch(() => {});
+    });
+  }
   win.once("ready-to-show", () => {
     if (!hiddenStart) win.show();
   });
@@ -217,10 +224,20 @@ function setAutostart(on) {
   if (!on) app.setLoginItemSettings({ openAtLogin: false });
 }
 
+// macOS menu bar icons are monochrome template images that the system tints to
+// match the bar, like its own Wi-Fi and volume icons. Windows keeps the colour icon.
+function trayIcon(running) {
+  const state = running ? "on" : "off";
+  if (process.platform !== "darwin") return nativeImage.createFromPath(path.join(ASSETS, `tray-${state}.png`));
+  const img = nativeImage.createFromPath(path.join(ASSETS, `tray-${state}Template.png`));
+  img.setTemplateImage(true);
+  return img;
+}
+
 function updateTray() {
   if (!tray) return;
   const running = !!engine;
-  tray.setImage(nativeImage.createFromPath(path.join(ASSETS, running ? "tray-on.png" : "tray-off.png")));
+  tray.setImage(trayIcon(running));
   const s = cache.active && cache.status[cache.active];
   tray.setToolTip(
     running
@@ -579,7 +596,7 @@ app.whenReady().then(() => {
   if (autostartOn()) setAutostart(true);
   games.init(app.getPath("userData")).catch(() => {});
   createWindow();
-  tray = new Tray(nativeImage.createFromPath(path.join(ASSETS, "tray-off.png")));
+  tray = new Tray(trayIcon(false));
   tray.on("click", showWindow);
   updateTray();
 

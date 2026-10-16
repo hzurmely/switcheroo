@@ -35,6 +35,10 @@ body {
   -webkit-app-region: drag;
 }
 .tb-logo { width: 16px; height: 16px; border-radius: 4px; }
+/* macOS: the window buttons sit on the left of this bar, so leave room for them
+   and centre the title the way native Mac windows do. */
+html[data-platform="darwin"] .titlebar { padding-left: 78px; justify-content: center; }
+html[data-platform="darwin"] .titlebar .tb-logo { display: none; }
 .app { flex: 1; display: grid; grid-template-columns: 72px 248px 1fr; min-height: 0; }
 
 /* rail */
