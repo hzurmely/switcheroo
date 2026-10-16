@@ -1,5 +1,5 @@
 const $ = (id) => document.getElementById(id);
-const COLORS = { a: "#5865f2", b: "#23a559" };
+const COLORS = { a: "#3d87d6", b: "#ef4135" };
 
 const S = {
   profiles: [], houses: [], house: null, a: "", b: "", running: false, active: null, status: {}, series: [],
@@ -246,7 +246,7 @@ const AVG_ROWS = [
 async function renderAvg() {
   const range = $("range").value;
   const raw = range === "all" ? S.avg : (await window.api.averages(range)) || {};
-  fillAvg(raw, "avgHead", "avgBody", "avgNote", "Green marks the better network. Game rank favours low latency and no packet loss.");
+  fillAvg(raw, "avgHead", "avgBody", "avgNote", "Blue marks the better network. Game rank favours low latency and no packet loss.");
   const clean = (await window.api.cleanAverages(range)) || {};
   fillAvg(clean, "cleanAvgHead", "cleanAvgBody", "cleanAvgNote", "Preprocessed data: duplicates and impossible rows removed, outliers capped, then the networks are balanced only if the gap in samples is big. Game mode picks the network using these numbers.");
 }

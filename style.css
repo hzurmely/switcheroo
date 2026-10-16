@@ -5,11 +5,15 @@
   --bg3: #383a40;
   --text: #dbdee1;
   --muted: #949ba4;
-  --blurple: #5865f2;
-  --green: #23a559;
-  --red: #f23f43;
-  --a: #5865f2;
-  --b: #23a559;
+  /* brand: blue, white, red, ink. Green is only for live status (ok), never decoration. */
+  --blue: #0055a4;
+  --blue-dark: #003d78;
+  --pale: #c9dcf1;
+  --blue-hi: #3d87d6; /* a lighter blue only for the chart line of network A, brand blue is too dark on this background */
+  --ok: #23a559;
+  --red: #ef4135;
+  --a: #3d87d6;
+  --b: #ef4135;
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
@@ -45,15 +49,15 @@ html[data-platform="darwin"] .titlebar .tb-logo { display: none; }
 .rail { background: var(--bg0); display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 6px 0; }
 .rail-logo { width: 48px; height: 48px; border-radius: 14px; display: block; }
 .rail-houses { display: flex; flex-direction: column; gap: 8px; align-items: center; overflow: auto; }
-.rail-net.add { color: var(--green); font-size: 24px; }
-.rail-net.add:hover { background: var(--green); color: #fff; }
+.rail-net.add { color: var(--pale); font-size: 24px; }
+.rail-net.add:hover { background: var(--blue); color: #fff; }
 .rail-sep { width: 32px; height: 2px; border-radius: 1px; background: var(--bg3); }
 .rail-net {
   width: 48px; height: 48px; border: 0; border-radius: 24px; background: var(--bg2); color: var(--text);
   font: 600 15px "Segoe UI", sans-serif; cursor: pointer; transition: border-radius .15s, background .15s; position: relative;
 }
 .rail-net:hover { border-radius: 16px; }
-.rail-houses .rail-net:hover, .rail-houses .rail-net.on { background: var(--blurple); color: #fff; }
+.rail-houses .rail-net:hover, .rail-houses .rail-net.on { background: var(--blue); color: #fff; }
 .rail-net.on { border-radius: 16px; }
 .rail-net.on::before { content: ""; position: absolute; left: -12px; top: 12px; width: 4px; height: 24px; border-radius: 0 4px 4px 0; background: #fff; }
 
@@ -70,15 +74,15 @@ html[data-platform="darwin"] .titlebar .tb-logo { display: none; }
 .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
 .dot.a { background: var(--a); }
 .dot.b { background: var(--b); }
-.badge { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: var(--green); color: #fff; }
+.badge { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: var(--ok); color: #fff; }
 .field { display: flex; flex-direction: column; gap: 4px; margin: 4px 8px; font-size: 12px; font-weight: 600; color: var(--muted); }
 select {
   background: var(--bg0); color: var(--text); border: 0; border-radius: 4px; padding: 8px; font: inherit; font-size: 14px; font-weight: 400; outline: none;
 }
-select:focus { box-shadow: 0 0 0 2px var(--blurple); }
+select:focus { box-shadow: 0 0 0 2px var(--pale); }
 .btn { margin: 4px 8px; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--bg3); color: var(--text); font: 600 14px "Segoe UI", sans-serif; cursor: pointer; }
 .btn:hover { filter: brightness(1.15); }
-.btn.primary { background: var(--green); color: #fff; }
+.btn.primary { background: var(--blue); color: #fff; }
 .btn.primary.stop { background: var(--red); }
 .hint { margin: 4px 10px; font-size: 12px; color: var(--red); min-height: 16px; }
 .user { flex: none; height: 52px; background: #232428; display: flex; align-items: center; gap: 10px; padding: 0 10px; }
@@ -95,7 +99,7 @@ select:focus { box-shadow: 0 0 0 2px var(--blurple); }
 .switch input { display: none; }
 .switch i { width: 36px; height: 20px; border-radius: 10px; background: var(--muted); position: relative; transition: background .15s; }
 .switch i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: transform .15s; }
-.switch input:checked + i { background: var(--green); }
+.switch input:checked + i { background: var(--blue); }
 .switch input:checked + i::after { transform: translateX(16px); }
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); gap: 12px; padding: 16px 16px 8px; }
 .card { background: var(--bg1); border-radius: 8px; padding: 12px 14px; display: grid; grid-template-columns: 1fr auto; align-items: baseline; }
@@ -111,7 +115,7 @@ canvas { width: 100%; height: 150px; display: block; }
 .feed-head { padding: 10px 14px; font-weight: 700; border-bottom: 1px solid var(--bg0); }
 .feed { flex: 1; overflow: auto; padding: 8px 14px; display: flex; flex-direction: column; gap: 10px; }
 .msg { display: flex; gap: 12px; }
-.msg .av { width: 36px; height: 36px; border-radius: 50%; background: var(--blurple); display: grid; place-items: center; flex: none; }
+.msg .av { width: 36px; height: 36px; border-radius: 50%; background: var(--blue); display: grid; place-items: center; flex: none; }
 .msg .av svg { width: 20px; height: 20px; }
 .msg-body b { font-weight: 600; margin-right: 8px; }
 .msg-body time { color: var(--muted); font-size: 12px; }
@@ -122,7 +126,7 @@ canvas { width: 100%; height: 150px; display: block; }
 
 
 select, input:not([type]), input[type=text] { background: var(--bg0); color: var(--text); border: 0; border-radius: 4px; padding: 8px; font: inherit; font-size: 14px; font-weight: 400; outline: none; }
-input:focus { box-shadow: 0 0 0 2px var(--blurple); }
+input:focus { box-shadow: 0 0 0 2px var(--pale); }
 .btn.danger { color: var(--red); }
 .tabs { display: flex; align-items: center; gap: 4px; padding: 8px 16px 0; }
 .tab { background: none; border: 0; color: var(--muted); font: 600 14px "Segoe UI", sans-serif; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
@@ -137,7 +141,7 @@ input:focus { box-shadow: 0 0 0 2px var(--blurple); }
 .avg { width: 100%; border-collapse: collapse; }
 .avg th { text-align: left; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .03em; padding: 6px 8px; }
 .avg td { padding: 10px 8px; border-top: 1px solid var(--bg2); }
-.avg td.best { color: #3ddc84; font-weight: 700; }
+.avg td.best { color: var(--pale); font-weight: 700; }
 .note { margin: 0; color: var(--muted); font-size: 12px; }
 .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; }
 .row2 { display: flex; gap: 8px; }
@@ -145,7 +149,7 @@ input:focus { box-shadow: 0 0 0 2px var(--blurple); }
 .field.wide { margin: 0; }
 .path { margin: 0; font: 12px Consolas, monospace; color: var(--muted); word-break: break-all; }
 .bar { height: 8px; border-radius: 4px; background: var(--bg0); overflow: hidden; }
-.bar i { display: block; height: 100%; width: 0; background: var(--blurple); }
+.bar i { display: block; height: 100%; width: 0; background: var(--pale); }
 .pane > .feed-wrap, .pane > .chart-card, .pane > .stats { flex: none; }
 .pane > .feed-wrap { flex: 1; }
 
@@ -188,11 +192,11 @@ input:focus { box-shadow: 0 0 0 2px var(--blurple); }
 .gc-text b { font-size: 20px; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gc-text span { font-size: 13px; color: var(--muted); }
 .gc-right { display: flex; align-items: center; gap: 14px; flex: none; }
-.gc-live { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--green); }
-.gc-live i { width: 9px; height: 9px; border-radius: 50%; background: var(--green); animation: gcpulse 1.4s ease-out infinite; }
+.gc-live { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ok); }
+.gc-live i { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); animation: gcpulse 1.4s ease-out infinite; }
 @keyframes gcpulse { 0% { box-shadow: 0 0 0 0 rgba(35,165,90,.7); } 100% { box-shadow: 0 0 0 10px rgba(35,165,90,0); } }
-.gamecard.playing { background: linear-gradient(110deg, #2a2f4f 0%, var(--bg1) 70%); border-color: var(--blurple); box-shadow: 0 0 0 1px var(--blurple), 0 8px 28px rgba(88,101,242,.25); }
-.gamecard.playing .gc-icon { background: var(--blurple); color: #fff; }
+.gamecard.playing { background: linear-gradient(110deg, rgba(0,85,164,.55) 0%, var(--bg1) 70%); border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue), 0 8px 28px rgba(0,85,164,.35); }
+.gamecard.playing .gc-icon { background: var(--blue); color: #fff; }
 .gamecard.playing .gc-text span { color: var(--text); }
 .gamecard.off { opacity: .65; }
 @media (prefers-reduced-motion: reduce) { .gc-live i { animation: none; } }
@@ -213,7 +217,7 @@ input:focus { box-shadow: 0 0 0 2px var(--blurple); }
 .pystate{color:var(--muted);font-size:13px}
 .pyspacer{flex:1}
 .pyprog{margin:0 16px 6px;background:var(--bg0);border-radius:6px;position:relative;height:22px;overflow:hidden;flex:none}
-.pybarfill{height:100%;background:var(--blurple);width:0;transition:width .2s}
+.pybarfill{height:100%;background:var(--pale);width:0;transition:width .2s}
 .pybarfill.busy{opacity:.45;animation:pyp 1.2s ease-in-out infinite alternate}
 @keyframes pyp{from{opacity:.25}to{opacity:.6}}
 .pyprog small{position:absolute;inset:0;display:flex;align-items:center;padding:0 10px;font-size:12px;color:#fff;white-space:nowrap;overflow:hidden}
@@ -231,7 +235,7 @@ input:focus { box-shadow: 0 0 0 2px var(--blurple); }
 .pyterm-out pre{margin:0 0 4px;white-space:pre-wrap;word-break:break-word;font:12px/1.4 Consolas,"Courier New",monospace}
 .pyterm-out pre.cmd{color:var(--muted)}
 .pyterm-in{display:flex;align-items:center;gap:8px;padding:6px 16px 10px}
-.pyterm-in span{color:var(--green);font:13px Consolas,monospace}
+.pyterm-in span{color:var(--pale);font:13px Consolas,monospace}
 .pyterm-in input{flex:1;background:var(--bg1);border:0;border-radius:6px;color:var(--text);padding:6px 10px;font:13px Consolas,"Courier New",monospace;outline:none}
 
 /* Roo as the profile picture. No background, like a transparent PNG profile picture: only his bottom is cut by a round edge, so ears and hops reach out of the circle. */
@@ -240,8 +244,8 @@ input:focus { box-shadow: 0 0 0 2px var(--blurple); }
 .roowrap { position: absolute; inset: 0; overflow: visible; clip-path: inset(-150px -2px 0 -30px round 0 0 20px 20px); }
 .roowrap svg { position: absolute; width: 127.8px; height: 118.9px; left: -56.8px; top: -26.7px; max-width: none; overflow: visible; }
 .rooav .dot { position: absolute; right: -3px; bottom: -3px; width: 14px; height: 14px; box-sizing: border-box; border-radius: 50%; background: var(--muted); border: 3px solid var(--bg0); transition: background .2s; }
-.rooav.on .dot { background: var(--green); }
-.rooav.game .dot { background: var(--blurple); }
+.rooav.on .dot { background: var(--ok); }
+.rooav.game .dot { background: var(--blue); }
 
 /* Roo's own animation, copied from mascot/roo-animated.svg (the page style rules must live in this file) */
 #switcheroo * { transform-box: view-box; }
