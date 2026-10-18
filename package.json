@@ -1,16 +1,18 @@
 {
   "name": "switcheroo",
   "productName": "Switcheroo",
-  "version": "2.7.11",
+  "version": "2.7.12",
   "description": "Tests two Wi-Fi networks in the background and switches to the faster one.",
   "main": "main.js",
   "author": "hzurmely",
   "license": "MIT",
+  "homepage": "https://github.com/hzurmely/switcheroo",
   "scripts": {
     "start": "electron .",
-    "test": "node engine.test.js && node retry.test.js && node detect.test.js && node games.test.js && node traylabel.test.js && node bench.test.js",
+    "test": "node engine.test.js && node retry.test.js && node detect.test.js && node games.test.js && node traylabel.test.js && node bench.test.js && node linux.test.js",
     "dist": "electron-builder --win nsis --publish never",
-    "dist:mac": "electron-builder --mac dmg --x64 --arm64 --publish never"
+    "dist:mac": "electron-builder --mac dmg --x64 --arm64 --publish never",
+    "dist:linux": "electron-builder --linux AppImage deb --x64 --publish never"
   },
   "devDependencies": {
     "electron": "^33.2.0",
@@ -58,6 +60,17 @@
       "category": "public.app-category.utilities",
       "identity": null,
       "artifactName": "Switcheroo-${version}-mac-${arch}.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "icon.png",
+      "category": "Network",
+      "synopsis": "Switches to the faster Wi-Fi network",
+      "maintainer": "hzurmely <hzurmely@users.noreply.github.com>",
+      "artifactName": "Switcheroo-${version}-linux-${arch}.${ext}"
     },
     "asarUnpack": [
       "python/**"

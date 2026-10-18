@@ -12,6 +12,8 @@ Download `Switcheroo-Setup-<version>.exe` from the Releases page, run it, pick y
 
 Both networks must already be saved in Windows (connect to each one once).
 
+Linux: download `Switcheroo-<version>-linux-x86_64.AppImage` (make it executable and run it) or the `.deb` from the Releases page. It needs NetworkManager (`nmcli`) and Wi-Fi saved as NetworkManager connections. The AppImage updates itself, the `.deb` does not.
+
 Or with Windows Package Manager: `winget install hzurmely.Switcheroo`
 
 ## Updates

@@ -2,7 +2,7 @@ const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, shell, dialog } = 
 const path = require("path");
 const fs = require("fs");
 const { Engine } = require("./engine");
-const sys = process.platform === "darwin" ? require("./netmac") : require("./netwin");
+const sys = process.platform === "darwin" ? require("./netmac") : process.platform === "linux" ? require("./netlinux") : require("./netwin");
 const { Store } = require("./store");
 const games = require("./games");
 const updater = require("./updater");
@@ -222,12 +222,27 @@ function showWindow() {
   win.focus();
 }
 
+// Electron cannot manage login items on Linux, so the app writes its own desktop entry.
+const linuxAutostartFile = () => path.join(process.env.XDG_CONFIG_HOME || path.join(app.getPath("home"), ".config"), "autostart", "switcheroo.desktop");
+
 function autostartOn() {
+  if (process.platform === "linux") return fs.existsSync(linuxAutostartFile());
   // Windows only reports the entry when asked with the same arguments it was saved with.
   return app.getLoginItemSettings({ args: ["--hidden"] }).openAtLogin || app.getLoginItemSettings().openAtLogin;
 }
 
 function setAutostart(on) {
+  if (process.platform === "linux") {
+    const file = linuxAutostartFile();
+    try {
+      if (on) {
+        fs.mkdirSync(path.dirname(file), { recursive: true });
+        const exe = process.env.APPIMAGE || process.execPath;
+        fs.writeFileSync(file, `[Desktop Entry]\nType=Application\nName=Switcheroo\nComment=Switches to the faster Wi-Fi network\nExec="${exe}" --hidden\nX-GNOME-Autostart-enabled=true\n`);
+      } else fs.rmSync(file, { force: true });
+    } catch {}
+    return;
+  }
   app.setLoginItemSettings({ openAtLogin: !!on, args: ["--hidden"] });
   if (!on) app.setLoginItemSettings({ openAtLogin: false });
 }
@@ -685,6 +700,9 @@ ipcMain.handle("house:detect", async () => {
 });
 
 // ---------------------------------------------------------------- lifecycle
+
+// AppImages cannot carry the setuid sandbox helper, and newer Ubuntu blocks the fallback, so the AppImage starts without it.
+if (process.platform === "linux" && process.env.APPIMAGE) app.commandLine.appendSwitch("no-sandbox");
 
 app.whenReady().then(() => {
   app.setAppUserModelId("com.hzurmely.switcheroo");

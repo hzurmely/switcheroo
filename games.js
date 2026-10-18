@@ -124,7 +124,35 @@ function csvRow(line) {
 }
 
 // Resolves { procs, error }. error is set when PowerShell could not list the programs.
+// Linux and macOS: ps lists the programs. Windows games run through Wine or Proton show up as .exe paths in the arguments.
+function parsePs(text) {
+  const procs = [];
+  for (const line of String(text || "").split(/\r?\n/)) {
+    const m = /^\s*(\S+)\s*(.*)$/.exec(line);
+    if (!m) continue;
+    let name = m[1];
+    let p = "";
+    const exe = /^(.*?([^\/\\]+)\.exe)\b/i.exec(m[2]);
+    if (exe) {
+      name = exe[2];
+      p = exe[1];
+    } else if (m[2].startsWith("/")) {
+      p = m[2].split(/\s--?\w/)[0].trim();
+    }
+    procs.push({ name, path: p.replace(/\//g, "\\"), mb: 0 });
+  }
+  return procs;
+}
+
 function processList() {
+  if (process.platform !== "win32") {
+    return new Promise((resolve) => {
+      execFile("ps", ["-eo", "comm=,args="], { timeout: 10000, maxBuffer: 16 << 20 }, (err, out) => {
+        const procs = parsePs(out);
+        resolve({ procs, error: procs.length ? null : (err && err.message) || "No programs were listed" });
+      });
+    });
+  }
   const ps = "Get-Process | Select-Object ProcessName,Path,WorkingSet64 | ConvertTo-Csv -NoTypeInformation";
   return new Promise((resolve) => {
     execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", ps], { windowsHide: true, timeout: 20000, maxBuffer: 16 << 20 }, (err, out, errOut) => {
@@ -169,4 +197,4 @@ async function scan(extra) {
   return { count: procs.length, found: matchGame(procs, extra), top, error, db: db.count };
 }
 
-module.exports = { detect, scan, matchGame, KNOWN, init, setDb, dbSize: () => db.count };
+module.exports = { detect, scan, matchGame, parsePs, KNOWN, init, setDb, dbSize: () => db.count };
