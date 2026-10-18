@@ -62,6 +62,11 @@ class Engine extends EventEmitter {
     if (this.wake) this.wake();
   }
 
+  // When on, the other network is only visited after the quality dropped, never on a timer.
+  setOnlyOnDrop(v) {
+    this.o.onlyOnDrop = !!v;
+  }
+
   stop() {
     this.stopped = true;
     if (this.wake) this.wake();
@@ -117,12 +122,76 @@ class Engine extends EventEmitter {
 
   async run() {
     this.emit("running", true);
+    this.looping = true;
     try {
       await this.loop();
     } catch (e) {
       this.log("Error: " + e.message);
     }
+    this.looping = false;
+    if (this.benchReq) {
+      this.benchReq.res({ ok: false, message: "Switching was stopped." });
+      this.benchReq = null;
+      this.benching = null;
+    }
     this.emit("running", false);
+  }
+
+  // Tests both networks one after the other, then goes back to the network it started on.
+  // While switching is running the loop does it between two checks, so the two never fight over Wi-Fi.
+  benchmark(rounds = 3) {
+    if (this.benching) return this.benching;
+    if (this.game) return Promise.resolve({ ok: false, message: "Close the game first. A benchmark disconnects you for a moment." });
+    if (!this.looping) {
+      this.benching = this.benchNow(rounds).finally(() => (this.benching = null));
+      return this.benching;
+    }
+    this.benching = new Promise((res) => {
+      this.benchReq = { rounds, res };
+      if (this.wake) this.wake();
+    });
+    return this.benching;
+  }
+
+  async benchNow(rounds) {
+    const first = await this.sys.current();
+    const origin = first.ssid || null;
+    const inPair = this.nets.find((n) => same(n, origin));
+    const order = inPair ? [inPair, this.other(inPair)] : [...this.nets];
+    const results = [];
+    this.log(`Benchmark started${origin ? " from " + origin : ""}`);
+    this.emit("bench", { state: "start", nets: this.nets, origin });
+    for (const net of order) {
+      if (this.stopped) break;
+      this.emit("bench", { state: "testing", net });
+      if (!same(net, (await this.sys.current()).ssid) && !(await this.connect(net))) {
+        this.log(`Benchmark: ${net} did not come up (${this.why})`);
+        results.push({ net, ok: false, why: this.why });
+        continue;
+      }
+      const ms = [];
+      for (let i = 0; i < rounds && !this.stopped; i++) {
+        ms.push(await this.sys.measure());
+        this.emit("bench", { state: "sample", net, done: i + 1, of: rounds });
+      }
+      const nums = (k) => ms.map((m) => m[k]).filter((v) => typeof v === "number");
+      const avg = (k) => (nums(k).length ? mean(nums(k)) : null);
+      const res = { net, ok: ms.length > 0, mbps: avg("mbps"), latency: avg("latency"), loss: avg("loss"), score: avg("score") ?? 0, samples: ms.length };
+      results.push(res);
+      this.log(`Benchmark ${net}: ${res.mbps === null ? "n/a" : res.mbps.toFixed(1) + " Mbps"}, ${res.latency === null ? "n/a" : Math.round(res.latency) + " ms"}`);
+    }
+    let returned = true;
+    if (origin && !same(origin, (await this.sys.current()).ssid)) {
+      returned = await this.connect(origin);
+      this.log(returned ? `Benchmark done. Back on ${origin}` : `Benchmark done, but could not get back to ${origin}`);
+    } else {
+      this.log("Benchmark done");
+    }
+    const good = results.filter((x) => x.ok);
+    const winner = good.length ? good.reduce((a, b) => (b.score > a.score ? b : a)).net : null;
+    const out = { ok: true, results, winner, origin, returned };
+    this.emit("bench", { state: "done", ...out });
+    return out;
   }
 
   async loop() {
@@ -139,6 +208,21 @@ class Engine extends EventEmitter {
 
     let lastTrial = Date.now();
     while (!this.stopped) {
+      if (this.benchReq) {
+        const req = this.benchReq;
+        this.benchReq = null;
+        const out = await this.benchNow(req.rounds);
+        this.benching = null;
+        req.res(out);
+        const now = await this.sys.current();
+        const back = this.nets.find((n) => same(n, now.ssid));
+        if (back) {
+          active = back;
+          this.setActive(active);
+        }
+        lastTrial = Date.now();
+        continue;
+      }
       const c = await this.sys.current();
       const here = this.nets.find((n) => same(n, c.ssid));
       if (here && here !== active) {
@@ -181,7 +265,7 @@ class Engine extends EventEmitter {
 
       const degraded = prev > 0 && m.score < prev * this.o.degradeRatio;
       const since = Date.now() - lastTrial;
-      if ((degraded && since >= this.o.trialCooldown) || since >= this.o.trialInterval) {
+      if ((degraded && since >= this.o.trialCooldown) || (!this.o.onlyOnDrop && since >= this.o.trialInterval)) {
         active = await this.trial(active, m, degraded ? "quality dropped" : "scheduled comparison");
         this.setActive(active);
         lastTrial = Date.now();

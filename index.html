@@ -32,6 +32,7 @@
       <label class="field">Network B<select id="selB"></select></label>
       <button class="btn" id="refresh">Refresh list</button>
       <button class="btn primary" id="toggle">Start switching</button>
+      <button class="btn" id="bench" title="Tests both networks one after the other, then goes back to the one you were on">Benchmark both networks</button>
       <button class="btn danger" id="delHouse">Delete household</button>
       <p class="hint" id="hint"></p>
     </div>
@@ -178,6 +179,14 @@
         </div>
         <canvas id="chart"></canvas>
       </section>
+      <section class="chart-card" id="benchCard" hidden>
+        <div class="chart-head"><b>Benchmark</b><span class="note" id="benchState"></span></div>
+        <table class="avg">
+          <thead><tr><th>Network</th><th>Speed</th><th>Latency</th><th>Loss</th></tr></thead>
+          <tbody id="benchBody"></tbody>
+        </table>
+        <p class="note" id="benchNote"></p>
+      </section>
       <section class="feed-wrap">
         <div class="feed-head">Activity</div>
         <div class="feed" id="feed"></div>
@@ -271,6 +280,11 @@
           <div class="row2"><button class="btn" id="updCheck">Check for updates</button><button class="btn primary" id="updInstall" hidden>Restart to update</button></div>
           <label class="row"><span>Check for updates automatically</span><span class="switch"><input type="checkbox" id="autoUpdate"><i></i></span></label>
           <p class="note">When on, Switcheroo checks when it starts (including when it starts with Windows) and every few hours, and installs a downloaded update the next time you quit. When off, it only checks when you press the button.</p>
+        </div>
+        <div class="panel">
+          <b>Switching</b>
+          <label class="row"><span>Only switch network when quality drops</span><span class="switch"><input type="checkbox" id="onlyOnDrop"><i></i></span></label>
+          <p class="note">When on, Switcheroo stays on your network and only tries the other one after the quality gets clearly worse. When off, it also compares the two every few minutes.</p>
         </div>
         <div class="panel">
           <b>Startup</b>

@@ -19,6 +19,7 @@ let engine = null;
 let quitting = false;
 const cache = { logs: [], status: {}, active: null, pair: null, series: [], game: null };
 let store = null;
+let benchEngine = null; // temporary engine used when a benchmark runs while switching is off
 let runHouse = null; // household the running engine belongs to
 const avgCache = {};
 
@@ -93,6 +94,7 @@ function startEngine() {
   if (!house || !house.a || !house.b) { lastStartError = "Choose both networks first."; return false; }
   if (house.a === house.b) { lastStartError = "Pick two different networks."; return false; }
   if (engine) { lastStartError = "Already switching."; return false; }
+  if (benchEngine) { lastStartError = "A benchmark is running. Try again when it is done."; return false; }
   lastStartError = "";
   const a = house.a;
   const b = house.b;
@@ -109,6 +111,7 @@ function startEngine() {
       const clean = store.cleanAverages(house.id);
       return Object.keys(clean).length ? clean : store.averages(house.id);
     },
+    onlyOnDrop: loadSettings().onlyOnDrop === true,
   });
   const mine = engine;
   engine.on("log", (e) => {
@@ -135,6 +138,9 @@ function startEngine() {
     cache.game = g;
     send("game", g);
     updateTray();
+  });
+  engine.on("bench", (e) => {
+    if (engine === mine) send("bench", e);
   });
   engine.on("active", (n) => {
     if (engine !== mine) return;
@@ -308,7 +314,7 @@ function fullState() {
     series: here ? cache.series : [],
     logs: cache.logs,
     game: here ? cache.game : null,
-    prefs: { game: st.game !== false, extraGames: st.extraGames || [], maxMb: st.maxMb || 50, autoDetect: st.autoDetect !== false, autoUpdate: st.autoUpdate !== false },
+    prefs: { game: st.game !== false, extraGames: st.extraGames || [], maxMb: st.maxMb || 50, autoDetect: st.autoDetect !== false, autoUpdate: st.autoUpdate !== false, onlyOnDrop: st.onlyOnDrop === true },
     storage: storageInfo(),
   };
 }
@@ -366,6 +372,33 @@ ipcMain.handle("start", async () => {
   return { ok, why: ok ? "" : lastStartError };
 });
 ipcMain.handle("stop", () => stopEngine());
+
+// Tests both networks of the household on screen, then returns to the network it started on.
+ipcMain.handle("bench:run", async () => {
+  const h = currentHouse();
+  if (!h || !h.a || !h.b) return { ok: false, message: "Choose both networks first." };
+  if (h.a === h.b) return { ok: false, message: "Pick two different networks." };
+  if (benchEngine) return { ok: false, message: "A benchmark is already running." };
+  if (engine && runHouse !== h.id) {
+    const other = (houses().find((x) => x.id === runHouse) || {}).name || "another household";
+    return { ok: false, message: `Switching is running on ${other}. Stop it first, or open that household.` };
+  }
+  if (engine) return engine.benchmark();
+  const e = new Engine(sys, [h.a, h.b]);
+  benchEngine = e;
+  e.on("log", (l) => {
+    cache.logs.push(l);
+    if (cache.logs.length > 200) cache.logs.shift();
+    send("log", l);
+  });
+  e.on("bench", (b) => send("bench", b));
+  send("bench", { state: "start", nets: [h.a, h.b] });
+  try {
+    return await e.benchmark();
+  } finally {
+    benchEngine = null;
+  }
+});
 ipcMain.handle("update:state", () => updater.getState());
 ipcMain.handle("update:check", () => updater.check());
 ipcMain.handle("update:install", () => {
@@ -383,6 +416,7 @@ ipcMain.handle("prefs:set", (_e, p) => {
   if (typeof p.game === "boolean") patch.game = p.game;
   if (typeof p.autoDetect === "boolean") patch.autoDetect = p.autoDetect;
   if (typeof p.autoUpdate === "boolean") patch.autoUpdate = p.autoUpdate;
+  if (typeof p.onlyOnDrop === "boolean") patch.onlyOnDrop = p.onlyOnDrop;
   if (Array.isArray(p.extraGames)) patch.extraGames = p.extraGames.map(String).slice(0, 50);
   if (Number(p.maxMb) >= 5) {
     patch.maxMb = Math.min(5000, Math.floor(Number(p.maxMb)));
@@ -390,6 +424,7 @@ ipcMain.handle("prefs:set", (_e, p) => {
   }
   saveSettings(patch);
   if (patch.game === false && engine) engine.setGame(null);
+  if (typeof patch.onlyOnDrop === "boolean" && engine) engine.setOnlyOnDrop(patch.onlyOnDrop);
   return fullState().prefs;
 });
 ipcMain.handle("data:open", () => shell.openPath(store.dir));

@@ -229,6 +229,63 @@ async function start() {
   render();
 }
 
+// ---------------------------------------------------------------- benchmark
+
+function benchRows(results, winner) {
+  const body = $("benchBody");
+  body.innerHTML = "";
+  for (const x of results) {
+    const tr = document.createElement("tr");
+    const cells = x.ok
+      ? [x.net, x.mbps === null ? "n/a" : x.mbps.toFixed(1) + " Mbps", x.latency === null ? "n/a" : Math.round(x.latency) + " ms", x.loss === null ? "n/a" : Math.round(x.loss * 100) + "%"]
+      : [x.net, "did not connect", "", ""];
+    cells.forEach((t, i) => {
+      const td = document.createElement("td");
+      td.textContent = t;
+      if (i && x.net === winner) td.className = "best";
+      tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  }
+}
+
+function benchEvent(b) {
+  const card = $("benchCard");
+  if (b.state === "start") {
+    card.hidden = false;
+    $("benchBody").innerHTML = "";
+    $("benchNote").textContent = "";
+    $("benchState").textContent = "Running...";
+  } else if (b.state === "testing") {
+    $("benchState").textContent = "Testing " + b.net + "...";
+  } else if (b.state === "sample") {
+    $("benchState").textContent = `Testing ${b.net} (${b.done} of ${b.of})`;
+  } else if (b.state === "done") {
+    benchRows(b.results, b.winner);
+    $("benchState").textContent = "Done";
+    const back = b.origin ? (b.returned ? ` Back on ${b.origin}.` : ` Could not get back to ${b.origin}.`) : "";
+    $("benchNote").textContent = (b.winner ? `${b.winner} is faster right now.` : "No network could be tested.") + back;
+  }
+}
+
+async function runBench() {
+  const btn = $("bench");
+  btn.disabled = true;
+  btn.textContent = "Benchmarking...";
+  $("hint").textContent = "";
+  try {
+    const r = await window.api.runBenchmark();
+    if (r && r.ok === false) {
+      $("hint").textContent = r.message || "Could not run the benchmark.";
+      if (!$("benchBody").children.length) $("benchCard").hidden = true;
+    }
+  } catch (e) {
+    $("hint").textContent = "Benchmark failed: " + (e.message || e);
+  }
+  btn.disabled = false;
+  btn.textContent = "Benchmark both networks";
+}
+
 async function loadAvg() {
   S.avg = (await window.api.averages("all")) || {};
   renderAvg();
@@ -406,6 +463,7 @@ async function exportCsv() {
 }
 
 function renderSettings() {
+  $("onlyOnDrop").checked = !!S.prefs.onlyOnDrop;
   $("gameOn").checked = !!S.prefs.game;
   $("autoDetect").checked = S.prefs.autoDetect !== false;
   $("autoUpdate").checked = S.prefs.autoUpdate !== false;
@@ -595,6 +653,8 @@ async function init() {
   window.api.on("update", renderUpdate);
   $("range").onchange = renderAvg;
   $("gcToggle").onchange = async (e) => ((S.prefs = await window.api.setPrefs({ game: e.target.checked })), renderSettings(), render());
+  $("onlyOnDrop").onchange = async (e) => ((S.prefs = await window.api.setPrefs({ onlyOnDrop: e.target.checked })), renderSettings());
+  $("bench").onclick = runBench;
   $("gameOn").onchange = async (e) => ((S.prefs = await window.api.setPrefs({ game: e.target.checked })), renderSettings());
   $("extraGames").onchange = async (e) => {
     const list = e.target.value.split(",").map((x) => x.trim()).filter(Boolean);
@@ -611,6 +671,7 @@ async function init() {
 
   let lastAvg = 0;
   window.api.on("log", addMessage);
+  window.api.on("bench", benchEvent);
   window.api.on("running", async () => {
     const was = S.running;
     applyState(await window.api.state());
@@ -629,9 +690,11 @@ async function init() {
     render();
   });
   window.api.on("houses", async (p) => {
+    const before = S.house;
     applyState(await window.api.state());
     S.houses = p.houses;
     S.house = p.house;
+    if (before !== p.house && !$("bench").disabled) $("benchCard").hidden = true;
     syncSetup();
     render();
     loadAvg();
