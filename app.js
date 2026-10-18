@@ -108,7 +108,7 @@ function render() {
   $("presence").classList.toggle("on", S.running);
   $("presence").classList.toggle("game", !!S.game);
   $("stateTitle").textContent = S.running ? "Switching" : "Paused";
-  $("stateSub").textContent = S.running ? (S.active ? "On " + S.active : "Connecting...") : "Not switching";
+  $("stateSub").textContent = S.running ? (S.active ? "On " + S.active : "Connecting...") : S.elsewhere ? "Switching on " + S.elsewhere : "Not switching";
   $("topic").textContent = S.running
     ? `Watching ${S.a} and ${S.b}. Currently on ${S.active || "..."}.`
     : "Pick two networks and press Start";
@@ -468,6 +468,7 @@ function applyState(st) {
     houses: st.houses,
     house: st.house,
     running: st.running,
+    elsewhere: st.elsewhere || "",
     active: st.active,
     status: st.status || {},
     series: st.series || [],
@@ -610,36 +611,33 @@ async function init() {
 
   let lastAvg = 0;
   window.api.on("log", addMessage);
-  window.api.on("running", (r) => {
-    if (r && !S.running) rooDo("roo-thumb");
-    S.running = r;
-    if (!r) {
-      S.active = null;
-      S.game = null;
-    }
+  window.api.on("running", async () => {
+    const was = S.running;
+    applyState(await window.api.state());
+    if (S.running && !was) rooDo("roo-thumb");
     render();
   });
   window.api.on("active", (n) => {
+    if (!S.running) return;
     if (S.active && n !== S.active) rooDo("roo-hop");
     S.active = n;
     render();
   });
   window.api.on("game", (g) => {
+    if (!S.running) return;
     S.game = g;
     render();
   });
   window.api.on("houses", async (p) => {
+    applyState(await window.api.state());
     S.houses = p.houses;
     S.house = p.house;
-    S.status = {};
-    S.series = [];
-    S.active = null;
-    S.running = (await window.api.state()).running;
     syncSetup();
     render();
     loadAvg();
   });
   window.api.on("status", (s) => {
+    if (!S.running) return;
     S.status[s.net] = s;
     if (s.m.score != null) S.series.push({ net: s.net, score: s.m.score, ts: s.ts });
     if (S.series.length > 120) S.series.shift();

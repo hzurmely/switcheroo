@@ -292,16 +292,22 @@ function updateTray() {
 
 function fullState() {
   const st = loadSettings();
+  // The household you look at can differ from the one that is switching.
+  // Live data is only sent for the household the engine is running on.
+  const viewed = (currentHouse() || {}).id || null;
+  const here = !!engine && runHouse === viewed;
+  const runName = engine && !here ? ((houses().find((h) => h.id === runHouse) || {}).name || "") : "";
   return {
     houses: houses(),
-    house: (currentHouse() || {}).id || null,
-    running: !!engine,
+    house: viewed,
+    running: here,
+    elsewhere: runName,
     autostart: autostartOn(),
-    active: cache.active,
-    status: cache.status,
-    series: cache.series,
+    active: here ? cache.active : null,
+    status: here ? cache.status : {},
+    series: here ? cache.series : [],
     logs: cache.logs,
-    game: cache.game,
+    game: here ? cache.game : null,
     prefs: { game: st.game !== false, extraGames: st.extraGames || [], maxMb: st.maxMb || 50, autoDetect: st.autoDetect !== false, autoUpdate: st.autoUpdate !== false },
     storage: storageInfo(),
   };
@@ -327,7 +333,8 @@ ipcMain.handle("house:save", (_e, h) => {
   else list.push(clean);
   const wasRunning = !!engine && runHouse === clean.id;
   saveSettings({ houses: list, house: clean.id });
-  if (engine && (wasRunning || runHouse !== clean.id)) {
+  // Only restart when the household that is switching was the one edited.
+  if (wasRunning) {
     stopEngine();
     startEngine();
   }
@@ -336,13 +343,8 @@ ipcMain.handle("house:save", (_e, h) => {
 });
 ipcMain.handle("house:select", (_e, id) => {
   if (!houses().some((h) => h.id === id)) return false;
-  const was = !!engine;
-  if (was) stopEngine();
+  // Clicking a household only changes what is shown. Switching keeps running where it was.
   saveSettings({ house: id });
-  cache.status = {};
-  cache.series = [];
-  cache.active = null;
-  if (was) startEngine();
   send("houses", { houses: houses(), house: id });
   return true;
 });
@@ -356,6 +358,9 @@ ipcMain.handle("house:delete", (_e, id) => {
 });
 
 ipcMain.handle("start", async () => {
+  // Pressing Start on another household moves switching there on purpose.
+  const h = currentHouse();
+  if (engine && h && runHouse !== h.id) stopEngine();
   const ok = startEngine();
   if (!ok && lastStartError === "Already switching.") send("running", true);
   return { ok, why: ok ? "" : lastStartError };
@@ -630,7 +635,9 @@ async function watchLocation() {
   if (!c.ssid) return;
   const list = houses();
   const cur = currentHouse();
-  if (cur && (sameName(cur.a, c.ssid) || sameName(cur.b, c.ssid))) return;
+  const running = engine ? list.find((h) => h.id === runHouse) : null;
+  // Already on a network of the household being viewed or the one switching: nothing to follow.
+  for (const h of [cur, running]) if (h && (sameName(h.a, c.ssid) || sameName(h.b, c.ssid))) return;
   const match = list.find((h) => sameName(h.a, c.ssid) || sameName(h.b, c.ssid));
   if (match) return goToHouse(match.id, `Arrived at ${match.name}, switched household`);
   if (loadSettings().autoDetect !== false) await autoCreateHouse(c.ssid, false);
