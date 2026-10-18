@@ -560,8 +560,23 @@ function goToHouse(id, text) {
   }
 }
 
+// Networks the user said no to, so the question is not asked again until the app restarts.
+const declined = new Set();
+let asking = false;
+let creating = false;
+
 // Builds a household from the connected network and its partner, when the names make it obvious.
 async function autoCreateHouse(ssid, manual) {
+  if (creating) return { ok: false, message: "Already looking for a household." };
+  creating = true;
+  try {
+    return await autoCreateHouseInner(ssid, manual);
+  } finally {
+    creating = false;
+  }
+}
+
+async function autoCreateHouseInner(ssid, manual) {
   const list = houses();
   const owner = list.find((h) => sameName(h.a, ssid) || sameName(h.b, ssid));
   if (owner) return { ok: false, message: `${ssid} already belongs to ${owner.name}.` };
@@ -569,11 +584,41 @@ async function autoCreateHouse(ssid, manual) {
   if (!pair) {
     return { ok: false, message: `No partner network found for ${ssid}. Name both networks alike, like Home and Home_5G.` };
   }
+  if (!manual) {
+    // Automatic detection only suggests. Nothing is added until the user says yes.
+    if (declined.has(ssid) || asking) return { ok: false, message: "Waiting for confirmation." };
+    asking = true;
+    let yes = false;
+    try {
+      const opts = {
+        type: "question",
+        buttons: ["Add household", "Not now"],
+        defaultId: 0,
+        cancelId: 1,
+        title: "Switcheroo",
+        message: `Add ${pair.name} as a household?`,
+        detail: `Switcheroo found two networks that look like a pair:\n\n${pair.a}\n${pair.b}\n\nAdd them so it can test both and switch to the faster one?`,
+        noLink: true,
+      };
+      const r = win && !win.isDestroyed() && win.isVisible() ? await dialog.showMessageBox(win, opts) : await dialog.showMessageBox(opts);
+      yes = r.response === 0;
+    } finally {
+      asking = false;
+    }
+    if (!yes) {
+      declined.add(ssid);
+      return { ok: false, message: "Household not added." };
+    }
+  }
+  // The lists may have changed while we waited, so look again before adding anything.
+  const fresh = houses();
+  const taken = fresh.find((h) => [h.a, h.b].some((x) => sameName(x, pair.a) || sameName(x, pair.b)));
+  if (taken) return { ok: false, message: `${ssid} already belongs to ${taken.name}.` };
   let name = pair.name;
   let n = 2;
-  while (list.some((h) => sameName(h.name, name))) name = `${pair.name.slice(0, 20)} ${n++}`;
+  while (fresh.some((h) => sameName(h.name, name))) name = `${pair.name.slice(0, 20)} ${n++}`;
   const house = { id: "h" + Date.now().toString(36), name, a: pair.a, b: pair.b };
-  saveSettings({ houses: [...list, house] });
+  saveSettings({ houses: [...fresh, house] });
   goToHouse(house.id, `New household found: ${name} (${pair.a} and ${pair.b})`);
   return { ok: true, name, a: pair.a, b: pair.b, manual: !!manual };
 }
