@@ -79,6 +79,17 @@ function discordMatch(name, procPath) {
   return null;
 }
 
+// Minecraft Java Edition runs inside javaw.exe (java on Linux and macOS), which says nothing on its own,
+// so it is recognised by its window title or by the launcher folder its Java runtime lives in.
+const MC_TITLE = /^(minecraft|lunar client|badlion)/i;
+const MC_PATH = /minecraft|4297127d64ec6|lunarclient|prismlauncher|multimc|curseforge|modrinth|tlauncher|badlion/i;
+
+function minecraftMatch(name, procPath, title) {
+  if (!/^javaw?$/.test(name)) return null;
+  if (MC_TITLE.test(String(title || "").trim()) || MC_PATH.test(String(procPath || ""))) return "Minecraft";
+  return null;
+}
+
 // Program names without ".exe", lower case.
 const KNOWN = [
   "valorant-win64-shipping", "valorant", "cs2", "csgo", "fortniteclient-win64-shipping", "fortnitelauncher",
@@ -92,7 +103,7 @@ const KNOWN = [
   "wutheringwaves", "honkaiimpact3", "zenlesszonezero", "tarkov", "escapefromtarkov", "lethalcompany", "valheim",
   "terraria", "stardewvalley", "amongus", "phasmophobia", "left4dead2", "tf2", "garrysmod", "csgo", "bf4", "bf3",
   "worldofwarships", "worldoftanks", "wotblitz", "pathofexile", "pathofexile_x64", "lostark", "blackdesert64",
-  "newworld", "throneandliberty", "dayz_x64",
+  "newworld", "throneandliberty", "dayz_x64", "minecraft.windows",
 ];
 
 // Install folders that only games use, the same trick launchers rely on.
@@ -153,21 +164,21 @@ function processList() {
       });
     });
   }
-  const ps = "Get-Process | Select-Object ProcessName,Path,WorkingSet64 | ConvertTo-Csv -NoTypeInformation";
+  const ps = "Get-Process | Select-Object ProcessName,Path,WorkingSet64,MainWindowTitle | ConvertTo-Csv -NoTypeInformation";
   return new Promise((resolve) => {
     execFile("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", ps], { windowsHide: true, timeout: 20000, maxBuffer: 16 << 20 }, (err, out, errOut) => {
       const procs = [];
       for (const line of (out || "").split(/\r?\n/).slice(1)) {
         if (!line.trim()) continue;
-        const [name, path, ws] = csvRow(line);
-        if (name) procs.push({ name, path: path || "", mb: Math.round((Number(ws) || 0) / 1048576) });
+        const [name, path, ws, title] = csvRow(line);
+        if (name) procs.push({ name, path: path || "", title: title || "", mb: Math.round((Number(ws) || 0) / 1048576) });
       }
       resolve({ procs, error: procs.length ? null : (err && err.message) || String(errOut || "No programs were listed").slice(0, 200) });
     });
   });
 }
 
-// procs: [{ name, path }] or plain names. Returns the name of the first game found, or null.
+// procs: [{ name, path, title }] or plain names. Returns the name of the first game found, or null.
 function matchGame(procs, extra = []) {
   const list = new Set([...KNOWN, ...extra.map(norm).filter(Boolean)]);
   for (const p of procs) {
@@ -175,6 +186,8 @@ function matchGame(procs, extra = []) {
     const path = typeof p === "string" ? "" : p.path || "";
     const viaDiscord = discordMatch(name, path);
     if (viaDiscord) return viaDiscord;
+    const mc = minecraftMatch(name, path, typeof p === "string" ? "" : p.title);
+    if (mc) return mc;
     if (list.has(name)) return name;
     if (path && !NOT_GAMES.test(name) && GAME_PATHS.some((re) => re.test(path))) return name;
   }
